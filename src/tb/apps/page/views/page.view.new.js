@@ -7,13 +7,14 @@ define(
         'layout.repository',
         'page.form',
         'component!translator',
+        'tb.component/formsubmitter/elements/linkSelector',
         'tb.component/formsubmitter/elements/nodeSelector',
         'component!popin',
         'component!formbuilder',
         'component!formsubmitter',
         'component!notify'
     ],
-    function (Core, require, jQuery, PageRepository, LayoutRepository, PageForm, translator, nodeSelectorValidator) {
+    function (Core, require, jQuery, PageRepository, LayoutRepository, PageForm, translator, linkSelectorValidator, nodeSelectorValidator) {
 
         'use strict';
 
@@ -61,7 +62,8 @@ define(
 
             onSubmit: function (data, form) {
                 var self = this,
-                    nodes;
+                    nodes,
+                    redirect;
 
                 if (typeof this.parent_uid === 'string') {
                     data.parent_uid = this.parent_uid;
@@ -76,6 +78,14 @@ define(
 
                 delete data.move_to;
 
+                if (data.redirect === 'updated') {
+                    redirect = linkSelectorValidator.compute('redirect', data.redirect, form);
+                    if (redirect !== null) {
+                        data.redirect = [];
+                        data.redirect.push(redirect[0]);
+                    }
+                }
+
                 this.popin.mask();
                 PageRepository.find(data.parent_uid).done(function (parent) {
                     LayoutRepository.find(parent.layout_uid).done(function (layout) {
@@ -89,7 +99,6 @@ define(
                             self.popin.hide();
                             return;
                         }
-
                         PageRepository.save(data).done(function (data, response) {
                             if (typeof self.callbackAfterSubmit === 'function') {
                                 self.callbackAfterSubmit(data, response);

@@ -59,8 +59,10 @@ define(
                     max_entry: 1
                 },
                 redirect: {
-                    type: 'text',
-                    label: translator.translate('redirect_to')
+                    type: 'linkSelector',
+                    label: translator.translate('redirect_to'),
+                    value: [],
+                    max_entry: 1
                 },
                 state: {
                     type: 'hidden',
@@ -92,7 +94,7 @@ define(
                 this.form.alttitle.value = '';
                 this.form.target.value = [];
                 this.form.url.value = [];
-                this.form.redirect.value = '';
+                this.form.redirect.value = [];
                 this.form.state.value = '';
             },
 

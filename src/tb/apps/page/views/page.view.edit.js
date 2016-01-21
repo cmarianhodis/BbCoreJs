@@ -24,13 +24,14 @@ define(
         'jquery',
         'page.repository',
         'page.form',
+        'tb.component/formsubmitter/elements/linkSelector',
         'tb.component/formsubmitter/elements/nodeSelector',
         'component!translator',
         'component!popin',
         'component!formbuilder',
         'component!notify'
     ],
-    function (require, Core, jQuery, PageRepository, PageForm, nodeSelectorValidator, translator) {
+    function (require, Core, jQuery, PageRepository, PageForm, linkSelectorValidator, nodeSelectorValidator, translator) {
 
         'use strict';
 
@@ -66,7 +67,8 @@ define(
 
             onSubmit: function (data, form) {
                 var self = this,
-                    nodes;
+                    nodes,
+                    redirect;
 
                 if (this.page_uid !== undefined) {
                     data.uid = this.page_uid;
@@ -79,6 +81,14 @@ define(
                     }
 
                     delete data.move_to;
+                }
+
+                if (data.redirect === 'updated') {
+                    redirect = linkSelectorValidator.compute('redirect', data.redirect, form);
+                    if (redirect !== null) {
+                        data.redirect = [];
+                        data.redirect.push(redirect[0]);
+                    }
                 }
 
                 this.popin.mask();
