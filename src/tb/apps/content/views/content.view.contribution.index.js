@@ -250,6 +250,11 @@ define(
                 jQuery(this.el).html(Renderer.render(template, {'categories': this.categories}));
 
                 this.showBlocksByCategory('_all');
+
+                var selector = jQuery(this.selectCategoriesId);
+                if (0 !== selector.has('option[value=favoris]').length) {
+                    selector.val('favoris').trigger('change');
+                }
             }
         });
 
