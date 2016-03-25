@@ -22,14 +22,16 @@ define(
     [
         'Core',
         'Core/Renderer',
+        'URIjs/URI',
         'BackBone',
         'jquery',
         'component!translator',
+        'component!imagecropper',
         'tb.component/mask/main',
         'component!session',
         'component!notify'
     ],
-    function (Core, Renderer, Backbone, jQuery, Translator) {
+    function (Core, Renderer, URI, Backbone, jQuery, Translator, Cropper) {
         'use strict';
 
         var FileView = Backbone.View.extend({
@@ -49,9 +51,37 @@ define(
                 this.form = formTag;
                 this.template = template;
                 this.element = element;
+                this.crop_button_class = 'btn-crop';
                 this.maskManager = require('tb.component/mask/main').createMask({'message': Translator.translate('uploading')});
 
                 this.uploadEvent();
+                this.cropEvent();
+            },
+
+            cropEvent: function () {
+                var self = this,
+                    imageUid = '',
+                    imagePath = '',
+                    originalName = '';
+
+                if (this.element.config && this.element.config.element && this.element.config.element.uid) {
+                    imageUid = this.element.config.element.uid;
+                }
+
+                Core.Mediator.subscribe('on:form:render', function (form) {
+                    form.find('.btn-crop').unbind('click').on('click', function () {
+                        if (form.find('.dz-preview').length === 0) {
+                            require('component!notify').error(Translator.translate('no_image_to_crop'));
+                        } else {
+                            if (form.find('input[name=' + self.element.getKey() + ']').val() === 'updated') {
+                                imagePath = form.find('span.' + self.element.getKey() + '_path').text();
+                                originalName = form.find('span.' + self.element.getKey() + '_originalname').text();
+                            }
+                            this.cropper = Cropper.create();
+                            this.cropper.show(imageUid, imagePath, originalName, self.element);
+                        }
+                    });
+                });
             },
 
             uploadEvent: function () {
@@ -158,7 +188,13 @@ define(
             buildValue: function (dropzone, value, element) {
                 if (typeof value === 'object') {
 
-                    var file = {'name': value.name};
+                    var file = {'name': value.name},
+                        uri = new URI(Core.get('api_base_url')),
+                        baseUrl = uri.protocol() + '://' + uri.host() + '/';
+
+                    if (value.thumbnail.indexOf(value.path) === -1) {
+                        value.thumbnail = baseUrl + 'images/' + value.path;
+                    }
 
                     dropzone.options.addedfile.call(dropzone, file);
                     dropzone.createThumbnailFromUrl(file, value.thumbnail + '?' + new Date().getTime(), function () {
