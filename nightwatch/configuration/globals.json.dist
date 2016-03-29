@@ -1,45 +1,45 @@
 {
-    "default" : {
-        "baseUrl" : "http://early.backbee.com",
-        "loadTime" : {
-            "defaultWait" : 1000,
+    "default": {
+        "baseUrl": "http://early.backbee.com",
+        "loadTime": {
+            "defaultWait": 1000,
             "mediumWait" : 2000,
             "longWait" : 5000,
-            "minimumWait" : 250,
-            "body" : 100,
-            "loginPopin" : 3000,
-            "toolbar" : 10000,
-            "logout" : 3000,
-            "errorDisplay" : 75,
-            "pageTree" : {
-                "loadPopin" : 150,
-                "createPagePopin" : 1500,
-                "editPagePopin" : 1500,
-                "deletePagePopin" : 1500,
-                "createPage" : 1000,
-                "defaultWait" : 700,
-                "searchInput" : 600,
-                "searchSubmitButton" : 300,
-                "waitForSearchResults" : 500,
+            "minimumWait": 250,
+            "body": 100,
+            "loginPopin": 3000,
+            "toolbar": 10000,
+            "logout": 3000,
+            "errorDisplay": 1000,
+            "pageTree": {
+                "loadPopin": 2000,
+                "createPagePopin": 2500,
+                "editPagePopin": 2500,
+                "deletePagePopin": 2500,
+                "createPage": 1000,
+                "deletePage": 1000,
+                "defaultWait": 1000,
+                "searchInput": 1500,
+                "searchSubmitButton": 1500,
+                "waitForSearchResults": 1000,
                 "waitForSubpagesToShow": 1000
             }
         },
-        "login" : {
-            "realUser" : {
-                "username" : "admins",
-                "password" : "admins"
+        "login": {
+            "realUser": {
+                "username": "admins",
+                "password": "admins"
             },
-            "fakeUser" : {
-                "username" : "fakeuser",
-                "password" : "fakepassword"
+            "fakeUser": {
+                "username": "fakeuser",
+                "password": "fakepassword"
             }
         },
-        "pageTree" : {
-            "searchForPage" : "Sport",
-            "createNewPage" : "Create new page test",
-            "position" : {
-                "x" : 10,
-                "y" : 200
+        "pageTree": {
+            "createNewPage": "Create new page test",
+            "position": {
+                "x": 10,
+                "y": 200
             }
         },
         "mediaLibrary" : {

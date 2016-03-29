@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -26,80 +26,9 @@
  * @author      Marian Hodis <marian.hodis@lp-digital.fr>
  */
 
+var homePageContextMenuButtons = ['addButton', 'editButton', 'browseToButton'];
+
 var commands = {
-    checkNewCreatedPage: function () {
-        'use strict';
-
-        var self = this;
-
-        this.getText('@firstChildNodeFirstSubpage', function (result) {
-            self.assert.ok(result.value === self.api.globals.pageTree.createNewPage, 'Check if the new created page is the first subpage');
-        });
-
-        return this;
-    },
-    contextMenuAction: function (button, elementSelector) {
-        'use strict';
-
-        var self = this,
-            contextMenuSection = this.section.contextMenu;
-
-        this
-            // make sure to have context menu closed by clicking somewhere else
-            .click('@navBarBrand')
-            // click copy from the context menu on the first page under home
-            .api.element('css selector', elementSelector, function (result) {
-                self.api.moveTo(result.value.ELEMENT, 0, 0, function () {
-                    self.api.mouseButtonClick('right');
-                    contextMenuSection.click('@' + button);
-                });
-            });
-
-        return this;
-    }
-};
-
-var searchCommands = {
-    search: function () {
-        'use strict';
-
-        var loadTime = this.api.globals.loadTime.pageTree;
-
-        this
-            .waitForElementVisible('@searchInput', loadTime.searchInput)
-            .setValue('@searchInput', this.api.globals.pageTree.searchForPage)
-            .waitForElementVisible('@submitButton', loadTime.searchSubmitButton)
-            .click('@submitButton');
-
-        this.api.pause(loadTime.waitForSearchResults);
-
-        return this;
-    },
-    checkSearchResults: function () {
-        'use strict';
-
-        var self = this,
-            iterator = 1;
-
-        this.api
-            .elements('css selector', this.elements.resultItem.selector, function (result) {
-                result.value.forEach(function (element) {
-                    self.api.elementIdText(element.ELEMENT, function () {
-                        self.api.assert.containsText(
-                            self.elements.resultItem.selector + ':nth-child(' + iterator + ')',
-                            self.api.globals.pageTree.searchForPage,
-                            'Check if results contain the searched text'
-                        );
-                    });
-                    if (iterator < result.value.length) {
-                        iterator += 1;
-                    }
-                });
-            })
-            .pause(this.api.globals.loadTime.pageTree.waitForSearchResults);
-
-        return this;
-    },
     // click on the show folder checkbox
     clickShowFolderCheckbox: function () {
         'use strict';
@@ -110,21 +39,22 @@ var searchCommands = {
 
         return this;
     },
-
     // check the results for show folder checkbox when it's checked
     checkShowFolderCheckboxCheckedResults: function () {
         'use strict';
 
         var self = this;
 
-        this.api.elements('css selector', this.elements.resultItemFolder.selector, function (result) {
+        // check that folder items to be hidden
+        this.api.elements('css selector', this.section.treeView.elements.resultItemFolder.selector, function (result) {
             result.value.map(function (value) {
                 self.api.elementIdDisplayed(value.ELEMENT, function (displayed) {
                     self.assert.ok(displayed.value === true, 'Check if folder is displayed');
                 });
             });
         });
-        this.api.elements('css selector', this.elements.resultItemNonFolder.selector, function (result) {
+        // check that non folder items to be hidden
+        this.api.elements('css selector', this.section.treeView.elements.resultItemNonFolder.selector, function (result) {
             result.value.map(function (value) {
                 self.api.elementIdDisplayed(value.ELEMENT, function (displayed) {
                     self.assert.ok(displayed.value === false, 'Check non folders to be hidden');
@@ -140,7 +70,7 @@ var searchCommands = {
 
         var self = this;
 
-        this.api.elements('css selector', this.elements.resultItem.selector, function (result) {
+        this.api.elements('css selector', this.section.treeView.elements.resultItem.selector, function (result) {
             result.value.forEach(function (element) {
                 self.api.elementIdDisplayed(element.ELEMENT, function (displayed) {
                     self.assert.ok(displayed.value === true, 'Check page to be displayed');
@@ -152,9 +82,76 @@ var searchCommands = {
     }
 };
 
-var homePageContextMenuButtons = ['addButton', 'editButton', 'browseToButton'];
+var treeViewCommands = {
+    moveMouseOnTreeElement: function (element, callback) {
+        'use strict';
+
+        var self = this;
+
+        this.api.element('css selector', element, function (result) {
+            self.api.moveTo(result.value.ELEMENT, 0, 0, function () {
+                if (typeof callback === 'function') {
+                    callback.call(self);
+                }
+            });
+        });
+
+        return this;
+    }
+};
+
+var searchCommands = {
+    search: function (searchPage) {
+        'use strict';
+
+        var loadTime = this.api.globals.loadTime.pageTree;
+
+        this
+            .waitForElementVisible('@searchInput', loadTime.searchInput)
+            .setValue('@searchInput', searchPage)
+            .waitForElementVisible('@submitButton', loadTime.searchSubmitButton)
+            .click('@submitButton');
+
+        this.api.pause(loadTime.waitForSearchResults);
+
+        return this;
+    },
+    checkSearchResults: function (searchPage) {
+        'use strict';
+
+        var self = this,
+            iterator = 1;
+
+        this.api
+            .elements('css selector', this.elements.resultItem.selector, function (result) {
+                result.value.forEach(function (element) {
+                    self.api.elementIdText(element.ELEMENT, function () {
+                        self.api.assert.containsText(
+                            self.elements.resultItem.selector + ':nth-child(' + iterator + ')',
+                            searchPage,
+                            'Check if results contain the searched text'
+                        );
+                    });
+                    if (iterator < result.value.length) {
+                        iterator += 1;
+                    }
+                });
+            })
+            .pause(this.api.globals.loadTime.pageTree.waitForSearchResults);
+
+        return this;
+    }
+};
 
 var contextMenuCommands = {
+    clickElementOnContextMenu: function (button) {
+        'use strict';
+
+        this.api.mouseButtonClick('right');
+        this.click('@' + button);
+
+        return this;
+    },
     // check if the add, edit and browse to buttons are displayed in homepage context menu and the rest to be hidden
     checkHomeDisplayedButtons: function () {
         'use strict';
@@ -162,14 +159,16 @@ var contextMenuCommands = {
         var element;
 
         for (element in this.elements) {
-            if (this.elements.hasOwnProperty(element) && element !== 'listItem') {
+            if (this.elements.hasOwnProperty(element)) {
                 if (homePageContextMenuButtons.indexOf(element) !== -1) {
-                    this.expect.element(this.elements[element].selector).to.be.visible.after(this.api.globals.loadTime.defaultWait);
+                    this.expect.element(this.elements[element].selector).to.be.visible.after(this.api.globals.loadTime.minimumWait);
                 } else {
-                    this.expect.element(this.elements[element].selector).to.not.be.visible.after(this.api.globals.loadTime.defaultWait);
+                    this.expect.element(this.elements[element].selector).to.not.be.visible.after(this.api.globals.loadTime.minimumWait);
                 }
             }
         }
+
+        return this;
     },
     // check if the paste, paste before, paste after buttons are displayed
     checkCopyDisplayedButtons: function () {
@@ -191,10 +190,11 @@ var actionsMenuCommands = {
         'use strict';
 
         var self = this,
-            contextMenuSection = this.parent.section.contextMenu;
+            contextMenuSection = this.parent.section.contextMenu,
+            treeViewSection = this.parent.section.treeView;
 
         // open the context menu
-        this.api.element('css selector', this.parent.elements.firstChildNode.selector, function (result) {
+        this.api.element('css selector', treeViewSection.elements.firstItemFolder.selector, function (result) {
             self.api.moveTo(result.value.ELEMENT, 0, 0, function () {
                 self.api.mouseButtonClick('right');
             });
@@ -223,58 +223,90 @@ module.exports = {
         openPageTreeButton: {
             selector: 'button#bundle-toolbar-tree'
         },
-        pageTreeDialog: {
-            selector: '[aria-describedby="bb-page-tree"] > div.ui-draggable-handle:nth-child(1)'
-        },
         pageTree: {
             selector: 'div#bb-page-tree'
         },
+        showFoldersCheckbox: {
+            selector: 'div.action-ctn.folder-filter input[type=checkbox]'
+        },
         actionButton: {
-            selector: 'div#bb-page-tree .contents-action button:nth-child(1)'
+            selector: 'div#bb-page-tree .contents-action button:first-child'
         },
         actionButtonDropdown: {
             selector: 'div#bb-page-tree .contents-action button.dropdown-toggle'
-        },
-        rootNode: {
-            selector: 'div.bb5-treeview ul li:nth-child(1) div'
-        },
-        firstChildNode: {
-            selector: 'div.bb5-treeview ul li ul li:nth-child(1) div'
-        },
-        firstChildNodeFirstSubpage: {
-            selector: 'div.bb5-treeview ul li ul li:nth-child(1) ul.jqtree_common li:nth-child(1) span'
-        },
-        firstChildNodeSubpages: {
-            selector: 'div.bb5-treeview ul li ul li:nth-child(1) ul.jqtree_common li'
-        },
-        firstChildNodeOpenSubpages: {
-            selector: 'div.bb5-treeview ul li ul li div a.jqtree-toggler:nth-child(1)'
-        },
-        firstChildNodeSpan: {
-            selector: 'div.bb5-treeview ul li ul li:nth-child(1) .jqtree-title'
-        },
-        secondChildNode: {
-            selector: 'div.bb5-treeview ul li ul li:nth-child(2) div'
-        },
-        secondChildNodeBorderSpan: {
-            selector: 'div.bb5-treeview ul li ul li:nth-child(2) span.jqtree-border'
-        },
-        secondChildNodeSpan: {
-            selector: 'div.bb5-treeview ul li ul li:nth-child(2) .jqtree-title'
-        },
-        ghostChildNode: {
-            selector: 'div.bb5-treeview ul li ul li.jqtree-ghost'
-        },
-        ghostChildNodeSpan: {
-            selector: 'div.bb5-treeview ul li ul li.jqtree-ghost span.jqtree-line'
-        },
-        closePopinButton: {
-            selector: '[aria-describedby="bb-page-tree"] > div.ui-draggable-handle:nth-child(1) button.ui-dialog-titlebar-close'
         }
     },
     sections: {
+        pageTreeDialog: {
+            selector: '[aria-describedby="bb-page-tree"] > div.ui-draggable-handle:first-child',
+            elements: {
+                closePopinButton: {
+                    selector: ' button.ui-dialog-titlebar-close'
+                }
+            }
+        },
+        treeView: {
+            selector: 'div#bb-page-tree div.bb5-treeview ul.jqtree_common.jqtree-tree',
+            commands: [treeViewCommands],
+            elements: {
+                home: {
+                    selector: 'li.jqtree_common.jqtree-folder:first-child div.jqtree-element.jqtree_common'
+                },
+                resultItemFolder: {
+                    selector: 'li.jqtree_common ul li.jqtree_common.jqtree-folder'
+                },
+                resultItemNonFolder: {
+                    selector: 'li.jqtree_common ul li.jqtree_common:not(.jqtree-folder)'
+                },
+                resultItem: {
+                    selector: 'li.jqtree_common ul li.jqtree_common'
+                },
+                allItemsName: {
+                    selector: 'li.jqtree_common ul li.jqtree_common span.jqtree-title'
+                },
+                firstItem: {
+                    selector: 'li.jqtree_common ul li.jqtree_common:not(.jqtree-folder) span.jqtree-title:first-child'
+                },
+                lastItem: {
+                    selector: 'li.jqtree_common ul li.jqtree_common:last-child div'
+                },
+                lastItemBorder: {
+                    selector: 'li.jqtree_common ul li.jqtree_common:last-child span.jqtree-border'
+                },
+                ghostItem: {
+                    selector: 'li.jqtree_common ul li.jqtree-ghost'
+                },
+                ghostItemLine: {
+                    selector: 'li.jqtree_common ul li.jqtree-ghost span.jqtree-line'
+                },
+                firstNonFolderItem: {
+                    selector: 'li.jqtree_common ul li.jqtree_common.jqtree-folder + li:not(.jqtree-folder) span.jqtree-title'
+                },
+                nonFolderItem: {
+                    selector: 'li.jqtree_common ul li.jqtree_common.jqtree-folder ~ li:not(.jqtree-folder) span.jqtree-title'
+                },
+                selectedFolderItem: {
+                    selector: 'li.jqtree_common ul li.jqtree-selected div a.jqtree-toggler'
+                },
+                selectedFolderItemChild: {
+                    selector: 'li.jqtree_common ul li.jqtree-selected ul.jqtree_common li.jqtree_common div.jqtree-element span.jqtree-title'
+                },
+                firstItemFolder: {
+                    selector: 'li.jqtree_common ul li.jqtree-folder:first-child div'
+                },
+                firstItemFolderFirstChild: {
+                    selector: 'li.jqtree_common ul li.jqtree_common.jqtree-folder:first-child ul.jqtree_common li.jqtree_common div'
+                },
+                firstItemFolderChildren: {
+                    selector: 'li.jqtree_common ul li.jqtree_common.jqtree-folder:first-child ul.jqtree_common li.jqtree_common'
+                },
+                firstItemFolderToggler: {
+                    selector: 'li.jqtree_common ul li.jqtree_common.jqtree-folder:first-child div a.jqtree-toggler'
+                }
+            }
+        },
         search: {
-            selector: 'div#bb-page-tree',
+            selector: 'div#bb-page-tree div.search-bar',
             commands: [searchCommands],
             elements: {
                 searchInput: {
@@ -286,12 +318,6 @@ module.exports = {
                 submitButton: {
                     selector: '.search-bar button.searchButton'
                 },
-                resultItemFolder: {
-                    selector: 'div.bb5-treeview ul li.jqtree_common.jqtree-folder'
-                },
-                resultItemNonFolder: {
-                    selector: 'div.bb5-treeview ul li.jqtree_common:not(.jqtree-folder)'
-                },
                 resultItem: {
                     selector: 'div.bb5-treeview ul li.jqtree_common'
                 }
@@ -301,9 +327,6 @@ module.exports = {
             selector: 'div.bb5-context-menu',
             commands: [contextMenuCommands],
             elements: {
-                listItem: {
-                    selector: 'ul li'
-                },
                 addButton: {
                     selector: 'button.bb5-context-menu-add'
                 },

@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -18,12 +18,12 @@
  */
 
 /**
- * Custom command for login
+ * Custom command for opening the user dropdown
  *
  * @category    NightWatch
  * @subcategory CustomCommands
  * @copyright   Lp digital system
- * @author      flavia.fodor@lp-digital.fr
+ * @author      Flavia Fodor <flavia.fodor@lp-digital.fr>
  */
 
 module.exports.command = function () {

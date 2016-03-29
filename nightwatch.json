@@ -1,13 +1,78 @@
 {
-    "src_folders" : ["nightwatch/tests"],
+    "src_folders" : "nightwatch/tests",
     "output_folder" : "nightwatch/reports",
-    "custom_commands_path" : ["nightwatch/commands/login", "nightwatch/commands/utils", "nightwatch/commands/content", "nightwatch/commands/medialibrary"],
+    "custom_commands_path" : [
+        "nightwatch/commands/login",
+        "nightwatch/commands/medialibrary",
+        "nightwatch/commands/utils"
+    ],
     "custom_assertions_path" : "",
-    "page_objects_path" : ["nightwatch/objects/login", "nightwatch/objects/content", "nightwatch/objects/page", "nightwatch/objects/toolbar", "nightwatch/objects/medialibrary"],
+    "page_objects_path" : [
+        "nightwatch/objects/content",
+        "nightwatch/objects/login",
+        "nightwatch/objects/medialibrary",
+        "nightwatch/objects/page",
+        "nightwatch/objects/toolbar"
+    ],
     "globals_path" : "nightwatch/configuration/globals.json",
-
+    "selenium" : {
+        "start_process" : true,
+        "server_path" : "node_modules/selenium-standalone/.selenium/selenium-server/2.53.1-server.jar",
+        "log_path" : "nightwatch/reports",
+        "host" : "127.0.0.1",
+        "port" : 4444,
+        "cli_args" : {
+            "webdriver.chrome.driver": "node_modules/selenium-standalone/.selenium/chromedriver/2.23-x64-chromedriver",
+            "webdriver.gecko.driver": "node_modules/selenium-standalone/.selenium/geckodriver/0.10.0-x64-geckodriver",
+            "webdriver.ie.driver" : ""
+        }
+    },
     "test_settings" : {
         "default" : {
+            "selenium_host" : "127.0.0.1",
+            "selenium_port" : 4444,
+            "silent" : true,
+            "screenshots" : {
+                "enabled" : true,
+                "on_failure" : true,
+                "on_error" : true,
+                "path" : "nightwatch/screenshots"
+            },
+            "desiredCapabilities" : {
+                "browserName" : "chrome",
+                "javascriptEnabled": true,
+                "databaseEnabled": true,
+                "locationContextEnabled": true,
+                "applicationCacheEnabled": true,
+                "browserConnectionEnabled": true,
+                "webStorageEnabled": true,
+                "acceptSslCerts": true,
+                "rotatable": true,
+                "nativeEvents": true,
+                "chromeOptions": {
+                    "args": ["disable-web-security", "ignore-certificate-errors"]
+                }
+            }
+        },
+        "chrome" : {
+            "selenium_host" : "127.0.0.1",
+            "selenium_port" : 4444,
+            "silent" : true,
+            "screenshots" : {
+                "enabled" : true,
+                "on_failure" : true,
+                "on_error" : true,
+                "path" : "nightwatch/screenshots"
+            },
+            "desiredCapabilities" : {
+                "browserName" : "chrome",
+                "javascriptEnabled": true,
+                "acceptSslCerts": true
+            }
+        },
+        "firefox" : {
+            "selenium_host" : "127.0.0.1",
+            "selenium_port" : 4444,
             "silent": true,
             "screenshots" : {
                 "enabled" : true,
@@ -16,9 +81,17 @@
                 "path" : "nightwatch/screenshots"
             },
             "desiredCapabilities": {
-                "browserName": "firefox",
+                "browsername" : "firefox",
                 "javascriptEnabled": true,
-                "acceptSslCerts": true
+                "marionette": true,
+                "databaseEnabled": true,
+                "locationContextEnabled": true,
+                "applicationCacheEnabled": true,
+                "browserConnectionEnabled": true,
+                "webStorageEnabled": true,
+                "acceptSslCerts": true,
+                "rotatable": true,
+                "nativeEvents": true
             }
         }
     }

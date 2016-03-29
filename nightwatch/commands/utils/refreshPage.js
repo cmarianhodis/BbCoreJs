@@ -18,21 +18,31 @@
  */
 
 /**
- * Tests for page load
+ * Custom command for refresh page
  *
  * @category    NightWatch
- * @subcategory Tests
+ * @subcategory CustomCommands
  * @copyright   Lp digital system
- * @author      Bogdan Oanes <bogdan.oanes@lp-digital.fr>
+ * @author      Marian Hodis <marian.hodis@lp-digital.fr>
  */
 
-module.exports = {
-    'Test homepage load': function (client) {
-        'use strict';
+module.exports.command = function (callback) {
+    'use strict';
 
-        client
-            .url(client.globals.baseUrl)
-            .waitForElementPresent('body', 1000)
-            .end();
+    var self = this,
+        refreshKeys = [this.Keys.F5];
+
+    try {
+        this
+            .sendKeys('body', refreshKeys)
+            .pause(this.globals.loadTime.toolbar);
+
+        if (typeof callback === 'function') {
+            callback.call(self);
+        }
+    } catch (error) {
+        console.log(error);
     }
+
+    return this;
 };

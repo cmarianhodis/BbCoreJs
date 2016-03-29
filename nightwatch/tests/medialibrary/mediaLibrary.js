@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -35,13 +35,14 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    before : function (client) {
+    before: function (client) {
         'use strict';
 
         // Login in BackBee
         client
             .windowMaximize()
-            .login();
+            .login()
+            .pause(client.globals.loadTime.toolbar);
 
         // Instantiate the necessary objects
         this.mediaLibraryObject = client.page.mediaLibrary();
@@ -64,7 +65,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    beforeEach : function (client) {
+    beforeEach: function (client) {
         'use strict';
 
         client.pause(client.globals.loadTime.defaultWait);
@@ -76,14 +77,17 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test open media library' : function (client) {
+    'Test open media library': function (client) {
         'use strict';
 
         // Click the media library button and assert the visibility of the media library popin
         this.mediaLibraryObject
             .waitForElementVisible('@openMediaLibraryButton', client.globals.loadTime.longWait)
-            .click('@openMediaLibraryButton')
-            .assert.visible('@mediaLibrary');
+            .click('@openMediaLibraryButton');
+
+        client.pause(client.globals.loadTime.longWait);
+
+        this.mediaLibraryObject.assert.visible('@mediaLibrary');
     },
 
     /**
@@ -91,7 +95,7 @@ module.exports = {
      * 
      * @returns {undefined}
      */
-    'Test if clicking on another area doens\'t close the popin' : function () {
+    'Test if clicking on another area doens\'t close the popin': function () {
         'use strict';
 
         // Click on overlay to check if popin closes
@@ -109,7 +113,7 @@ module.exports = {
      * 
      * @returns {undefined}
      */
-    'Test click on actions dropdown menu (Open/Close)' : function () {
+    'Test click on actions dropdown menu (Open/Close)': function () {
         'use strict';
 
         // Open dropdown
@@ -134,7 +138,7 @@ module.exports = {
      * 
      * @returns {undefined}
      */
-    'Test selected state of a folder when clicked' : function () {
+    'Test selected state of a folder when clicked': function () {
         'use strict';
 
         // Click on second node to validate the selected state
@@ -149,17 +153,19 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test right click on page opens context menu' : function (client) {
+    'Test right click on page opens context menu': function (client) {
         'use strict';
 
+        this.mediaLibraryObject
+            .click('@firstChildNode');
         // Move mouse on first element in tree and right click to show the contextual menu
         client
-            .moveToElement(this.mediaLibraryObject.elements.firstChildNode.selector, 0, 0)
+            .useXpath()
+            .moveToElement(this.mediaLibraryObject.elements.firstChildNode.selector, 2, 2)
             .mouseButtonClick('right');
 
         this.mediaLibraryObject
             .expect.section('@contextMenu').to.be.visible.before(client.globals.loadTime.defaultWait);
-
     },
 
     /**
@@ -168,11 +174,10 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test create new folder' : function (client) {
+    'Test create new folder': function (client) {
         'use strict';
 
-        this.contextMenuSection
-            .click('@addButton');
+        this.contextMenuSection.click('@addButton');
 
         this.inlineEditSection
             .assertElementsPresent()
@@ -189,7 +194,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test access to media folder on double click' : function (client) {
+    'Test access to media folder on double click': function (client) {
         'use strict';
 
         var self = this;
@@ -209,7 +214,7 @@ module.exports = {
      * 
      * @returns {undefined}
      */
-    'Test edit folder' : function () {
+    'Test edit folder': function () {
         'use strict';
 
         this.contextMenuSection
@@ -226,7 +231,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test cut folder' : function (client) {
+    'Test cut folder': function (client) {
         'use strict';
 
         this.contextMenuSection
@@ -251,7 +256,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test required fields on create new media image' : function (client) {
+    'Test required fields on create new media image': function (client) {
         'use strict';
 
         this.mediaLibraryObject
@@ -280,10 +285,12 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test remove media from form' : function (client) {
+    'Test remove media from form': function (client) {
         'use strict';
 
-        client.dropFile(0, 'dz-hidden-input', client.globals.mediaLibrary.files.image);
+        client
+            .dropFile(0, 'dz-hidden-input', client.globals.mediaLibrary.files.image)
+            .pause(client.globals.loadTime.mediumWait);
 
         this.formMediaImageSection
             .waitForElementVisible('@dropzone', client.globals.loadTime.mediumWait)
@@ -293,15 +300,17 @@ module.exports = {
     },
 
     /**
-     * Test create new media image
+     * Test create new media image picture
      * 
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test create new media image picture' : function (client) {
+    'Test create new media image picture': function (client) {
         'use strict';
 
-        client.dropFile(0, 'dz-hidden-input', client.globals.mediaLibrary.files.image);
+        client
+            .dropFile(0, 'dz-hidden-input', client.globals.mediaLibrary.files.image)
+            .pause(client.globals.loadTime.mediumWait);
 
         this.formMediaImageSection
             .assert.visible('@previewWrapper')
@@ -323,7 +332,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test click see button' : function (client) {
+    'Test click see button': function (client) {
         'use strict';
 
         this.mediaPreviewSection
@@ -332,6 +341,9 @@ module.exports = {
         this.mediaLibraryObject
             .waitForElementVisible('@seePopinPictureWrapper', client.globals.loadTime.longWait)
             .assert.visible('@seePopinPictureWrapper');
+        client.useXpath();
+        this.mediaLibraryObject.click('@seePopinPictureDialogClose');
+        client.useCss();
     },
 
     /**
@@ -340,7 +352,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test click edit button' : function (client) {
+    'Test click edit button': function (client) {
         'use strict';
 
         this.mediaPreviewSection
@@ -355,7 +367,8 @@ module.exports = {
 
         this.formMediaImageSection
             .waitForElementVisible('@titleField', client.globals.loadTime.longWait)
-            .assertElementsPresent();
+            .assertElementsPresent()
+            .click('@closeBtn');
     },
 
     /**
@@ -364,7 +377,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test click delete button' : function (client) {
+    'Test click delete button': function (client) {
         'use strict';
 
         this.mediaPreviewSection
@@ -388,7 +401,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test required field on create pdf media form' : function (client) {
+    'Test required field on create pdf media form': function (client) {
         'use strict';
 
         this.contextMenuSection
@@ -410,15 +423,17 @@ module.exports = {
     },
 
     /**
-     * Test create new media image
+     * Test create new media image pdf
      * 
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test create new media pdf' : function (client) {
+    'Test create new media pdf': function (client) {
         'use strict';
 
-        client.dropFile(2, 'dz-hidden-input', client.globals.mediaLibrary.files.pdf);
+        client
+            .dropFile(2, 'dz-hidden-input', client.globals.mediaLibrary.files.pdf)
+            .pause(client.globals.loadTime.mediumWait);
 
         this.formMediaImageSection
             .waitForElementVisible('@dropzone', client.globals.loadTime.mediumWait)
@@ -453,7 +468,7 @@ module.exports = {
      * 
      * @returns {undefined}
      */
-    'Test create folder - actions dropdown' : function () {
+    'Test create folder - actions dropdown': function () {
         'use strict';
 
         // Open actions dropdown and click add button
@@ -472,7 +487,7 @@ module.exports = {
      * 
      * @returns {undefined}
      */
-    'Test edit - actions dropdown' : function () {
+    'Test edit - actions dropdown': function () {
         'use strict';
 
         // Open actions dropdown and click edit button
@@ -492,7 +507,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test create media picture - actions dropdown' : function (client) {
+    'Test create media picture - actions dropdown': function (client) {
         'use strict';
 
         this.actionsDropdownSection
@@ -520,7 +535,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test create media pdf - actions dropdown' : function (client) {
+    'Test create media pdf - actions dropdown': function (client) {
         'use strict';
 
         this.actionsDropdownSection
@@ -548,7 +563,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test delete folder' : function (client) {
+    'Test delete folder': function (client) {
         'use strict';
 
         var self = this;
@@ -572,7 +587,7 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test close media library popin' : function (client) {
+    'Test close media library popin': function (client) {
         'use strict';
 
         this.mediaLibraryObject
@@ -587,9 +602,11 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    after : function (client) {
+    after: function (client) {
         'use strict';
 
-        client.end();
+        client
+            .logout()
+            .end();
     }
 };

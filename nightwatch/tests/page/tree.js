@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -26,8 +26,14 @@
  * @author      Marian Hodis <marian.hodis@lp-digital.fr>
  */
 
-var disabledClass = 'disabled',
-    toggleClosedClass = 'jqtree-closed';
+var randomNumbersFor = {
+        tests: Math.floor((Math.random() * 1000) + 1),
+        testsContextMenu: Math.floor((Math.random() * 1000) + 1),
+        testsEditContextMenu: Math.floor((Math.random() * 1000) + 1),
+        testsActionsMenu: Math.floor((Math.random() * 1000) + 1),
+        testsEditActionsMenu: Math.floor((Math.random() * 1000) + 1)
+    },
+    testsPageNameTreeElement = '//div[@class="bb5-treeview"]/ul/li/ul/li/div/span[text()="pagenamehere"]';
 
 module.exports = {
     /**
@@ -36,44 +42,76 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    before : function (client) {
+    before: function (client) {
         'use strict';
 
+        var self = this;
+
         // login in BackBee
-        client.login();
+        client
+            .login()
+            .pause((client.globals.loadTime.toolbar + client.globals.loadTime.longWait));
 
         // instantiate the necessary page objects
         this.pageTreeObject = client.page.tree();
-        this.contextMenuSection = this.pageTreeObject.section.contextMenu;
         this.pagePopinsObject = client.page.popins();
+        // make sure page tree is opened
+        this.pageTreeObject.click('@openPageTreeButton');
+        client.pause(client.globals.loadTime.pageTree.loadPopin);
+        // instantiate the necessary sections of page tree
+        this.pageTreeDialogSection = this.pageTreeObject.section.pageTreeDialog;
+        this.treeViewSection = this.pageTreeObject.section.treeView;
+        this.contextMenuSection = this.pageTreeObject.section.contextMenu;
+        this.actionsMenuSection = this.pageTreeObject.section.actionsMenu;
+        this.searchSection = this.pageTreeObject.section.search;
+        // generate tests page names for all the required actions
+        this.testsPageName = client.globals.pageTree.createNewPage + ' ' + randomNumbersFor.tests;
+        this.testsPageNameTreeElement = testsPageNameTreeElement.replace('pagenamehere', this.testsPageName);
+        this.testsPageNameContextMenu = client.globals.pageTree.createNewPage + ' ' + randomNumbersFor.testsContextMenu;
+        this.testsPageNameActionsMenu = client.globals.pageTree.createNewPage + ' ' + randomNumbersFor.testsActionsMenu;
+        // open context menu on home and click "Create"
+        this.treeViewSection.moveMouseOnTreeElement(this.treeViewSection.elements.home.selector, function () {
+            self.contextMenuSection.clickElementOnContextMenu('addButton');
+        });
+        // wait for the create page popin to load
+        client.pause(client.globals.loadTime.pageTree.createPagePopin);
+        // create a new page for tests
+        this.pagePopinsObject.section.createPopin.createNewPage(this.testsPageName);
+        // wait for the page to be created
+        client.pause(client.globals.loadTime.pageTree.createPage);
+        // refresh the page to make sure the page is correctly placed in tree
+        client.refreshPage();
+        // make sure page tree is opened
+        this.pageTreeObject.click('@openPageTreeButton');
+        client.pause(client.globals.loadTime.pageTree.loadPopin);
     },
 
     /**
-     * Wait before each test
+     * Make sure page tree is open before each test
      * 
      * @param {Object} client
      * @returns {undefined}
      */
-    beforeEach : function (client) {
+    beforeEach: function (client) {
         'use strict';
 
-        client.pause(client.globals.loadTime.defaultWait);
+        // make sure page tree is opened
+        this.pageTreeObject.click('@openPageTreeButton');
+        client.pause(client.globals.loadTime.pageTree.loadPopin);
     },
 
     /**
-     * Test the opening and the position of the page tree popin
+     * Test position of page tree popin
      * The position is based on x and y offsets
      * 
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test open and position of page tree popin' : function (client) {
+    'Test position of page tree popin': function (client) {
         'use strict';
 
-        // click the tree button and assert the visibility of the page tree popin
+        // check the visibility of the page tree popin
         this.pageTreeObject
-            .waitForElementVisible('@openPageTreeButton', client.globals.loadTime.toolbar)
-            .click('@openPageTreeButton')
             .waitForElementVisible('@pageTree', client.globals.loadTime.pageTree.loadPopin)
             // get the page tree popin position and compare the offsets
             .getLocation(this.pageTreeObject.elements.pageTree.selector, function (location) {
@@ -89,7 +127,7 @@ module.exports = {
      * 
      * @returns {undefined}
      */
-    'Test if clicking on another area doens\'t close the popin' : function () {
+    'Test if clicking on another area does not close the popin': function () {
         'use strict';
 
         // page tree popin is opened from previous test, click on BackBee image and test if page tree is still opened
@@ -104,29 +142,29 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Move, close and reopen page tree popin and check that position of popin is the same' : function (client) {
+    'Move, close and reopen page tree popin and check that position of popin is the same': function (client) {
         'use strict';
 
         var self = this;
 
         // test if the page tree dialog and the close button are visible
-        this.pageTreeObject
-            .assert.visible('@pageTreeDialog')
-            .assert.visible('@closePopinButton')
-            .api.pause(client.globals.loadTime.defaultWait)
+        this.pageTreeObject.expect.section('@pageTreeDialog').to.be.visible.before(client.globals.loadTime.defaultWait);
+        this.pageTreeDialogSection.assert.visible('@closePopinButton');
+        client
             // move the popin to a new position
-            .moveToElement(this.pageTreeObject.elements.pageTreeDialog.selector, 5, 5)
+            .moveToElement(this.pageTreeDialogSection.selector, 5, 5)
             .mouseButtonDown('left')
             .moveToElement('body', 150, 150)
             .mouseButtonUp('left')
             // get the location of the popin before closing
-            .getLocation('css selector', this.pageTreeObject.elements.pageTreeDialog.selector, function (locationBeforeClosing) {
+            .getLocation('css selector', this.pageTreeDialogSection.selector, function (locationBeforeClosing) {
+                //  close popin
+                self.pageTreeDialogSection.click('@closePopinButton');
+                // reopen popin
                 self.pageTreeObject
-                    //  close popin and reopen popin
-                    .click('@closePopinButton')
                     .click('@openPageTreeButton')
                     // get the location of the popin after reopening
-                    .getLocation('css selector', self.pageTreeObject.elements.pageTreeDialog.selector, function (locationAfterReopening) {
+                    .getLocation('css selector', self.pageTreeDialogSection.selector, function (locationAfterReopening) {
                         // test x and y offsets of the two locations to be equal
                         this.assert.ok(
                             locationBeforeClosing.value.x === locationAfterReopening.value.x && locationBeforeClosing.value.y === locationAfterReopening.value.y,
@@ -141,10 +179,10 @@ module.exports = {
      * 
      * @returns {undefined}
      */
-    'Test the folder only checkbox' : function () {
+    'Test the folder only checkbox': function () {
         'use strict';
 
-        this.pageTreeObject.section.search
+        this.pageTreeObject
             .clickShowFolderCheckbox()
             .checkShowFolderCheckboxCheckedResults()
             .clickShowFolderCheckbox()
@@ -157,29 +195,38 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test drag and drop page at same level shows position' : function (client) {
+    'Test drag and drop page at same level shows position': function (client) {
         'use strict';
 
         var self = this;
 
-        // drag first page beneath the second page without dropping
         client
-            .moveToElement(this.pageTreeObject.elements.firstChildNode.selector, 0, 0)
+            .useXpath()
+            .waitForElementVisible(this.testsPageNameTreeElement, client.globals.loadTime.defaultWait, function () {
+                client.moveToElement(self.testsPageNameTreeElement, 0, 0);
+            })
             .mouseButtonDown('left')
             .pause(client.globals.loadTime.defaultWait)
-            .element('css selector', this.pageTreeObject.elements.secondChildNode.selector, function (result) {
-                client.elementIdSize(result.value.ELEMENT, function (size) {
-                    client.moveToElement(self.pageTreeObject.elements.secondChildNode.selector, 0, size.value.height);
+            .useCss()
+            .waitForElementVisible(this.treeViewSection.elements.lastItem.selector, client.globals.loadTime.defaultWait, function () {
+                client.element('css selector', self.treeViewSection.elements.lastItem.selector, function (result) {
+                    client.elementIdSize(result.value.ELEMENT, function (size) {
+                        client.moveToElement(self.treeViewSection.elements.lastItem.selector, 0, size.value.height);
+                    });
                 });
             });
-        // test if the ghost element is present and has background-color
-        this.pageTreeObject
-            .assert.elementPresent('@ghostChildNode')
-            .expect.element('@ghostChildNodeSpan').to.have.css('background-color', 'Check if drag page at same level shows position');
-        // don't actually move the page
+        // test that the ghost element appears and has background-color
+        this.treeViewSection
+            .assert.elementPresent('@ghostItem')
+            .expect.element('@ghostItemLine').to.have.css('background-color', 'Check if drag page at same level shows position');
+        // drag back the test page in the initial position and release the left mouse button
         client
-            .moveToElement(this.pageTreeObject.elements.firstChildNode.selector, 0, 0)
-            .mouseButtonUp('left');
+            .useXpath()
+            .waitForElementVisible(this.testsPageNameTreeElement, client.globals.loadTime.defaultWait, function () {
+                client
+                    .moveToElement(self.testsPageNameTreeElement, 0, 0)
+                    .mouseButtonUp('left');
+            });
     },
 
     /**
@@ -188,23 +235,33 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test drag and drop page at another level shows position' : function (client) {
+    'Test drag and drop page at another level shows position': function (client) {
         'use strict';
 
         var self = this;
 
-        // drag first page over the second page without dropping
+        // find the test page and drag over the last item of tree
         client
-            .moveToElement(this.pageTreeObject.elements.firstChildNode.selector, 0, 0)
+            .useXpath()
+            .waitForElementVisible(this.testsPageNameTreeElement, client.globals.loadTime.defaultWait, function () {
+                client.moveToElement(self.testsPageNameTreeElement, 0, 0);
+            })
             .mouseButtonDown('left')
             .pause(client.globals.loadTime.defaultWait)
-            .moveToElement(self.pageTreeObject.elements.secondChildNode.selector, 0, 5);
-        // test if the hover element is visible
-        this.pageTreeObject.assert.visible('@secondChildNodeBorderSpan', 'Check if drag page at another level shows position');
-        // don't actually move the page
+            .useCss()
+            .waitForElementVisible(this.treeViewSection.elements.lastItem.selector, client.globals.loadTime.defaultWait, function () {
+                client.moveToElement(self.treeViewSection.elements.lastItem.selector, 0, 5);
+            });
+        // check that the element is visible
+        this.treeViewSection.assert.visible('@lastItemBorder', 'Check if drag page at another level shows position');
+        // drag back the test page in the initial position and release the left mouse button
         client
-            .moveToElement(this.pageTreeObject.elements.firstChildNode.selector, 0, 0)
-            .mouseButtonUp('left');
+            .useXpath()
+            .waitForElementVisible(this.testsPageNameTreeElement, client.globals.loadTime.defaultWait, function () {
+                client
+                    .moveToElement(self.testsPageNameTreeElement, 0, 0)
+                    .mouseButtonUp('left');
+            });
     },
 
     /**
@@ -212,12 +269,12 @@ module.exports = {
      * 
      * @returns {undefined}
      */
-    'Test selected state of a page when clicked' : function () {
+    'Test selected state of a page when clicked': function () {
         'use strict';
 
-        this.pageTreeObject
-            .click('@firstChildNode')
-            .expect.element('@firstChildNode').to.have.css('background-image', 'Check if the clicked page has a selected state');
+        this.treeViewSection
+            .click('@home')
+            .expect.element('@home').to.have.css('background-image', 'Check if the clicked page has a selected state');
     },
 
     /**
@@ -227,19 +284,18 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test double click on a page does the redirect and the popin is open' : function (client) {
+    'Test double click on a page does the redirect and the popin is open': function (client) {
         'use strict';
 
         var self = this;
 
         // get the old url
         client.url(function (oldUrl) {
-            // go to first page and double click it
+            // find the test page and double click it
             client
-                .element('css selector', self.pageTreeObject.elements.firstChildNode.selector, function (result) {
-                    client.moveTo(result.value.ELEMENT, 0, 0, function () {
-                        client.doubleClick();
-                    });
+                .useXpath()
+                .moveToElement(self.testsPageNameTreeElement, 0, 0, function () {
+                    client.doubleClick();
                 })
                 // wait for the refresh to be done
                 .pause(client.globals.loadTime.toolbar)
@@ -250,6 +306,11 @@ module.exports = {
             // test the page tree popin to be visible again
             self.pageTreeObject.expect.element('@pageTree').to.be.visible.after(client.globals.loadTime.pageTree.loadPopin);
         });
+        // do a redirect to home
+        this.treeViewSection.moveToElement('@home', 0, 0, function () {
+            self.contextMenuSection.clickElementOnContextMenu('browseToButton');
+        });
+        client.pause(client.globals.loadTime.toolbar);
     },
 
     /**
@@ -258,17 +319,17 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test right click on page opens context menu' : function (client) {
+    'Test right click on page opens context menu': function (client) {
         'use strict';
 
         var self = this;
 
-        client.element('css selector', this.pageTreeObject.elements.firstChildNode.selector, function (result) {
-            client.moveTo(result.value.ELEMENT, 0, 0, function () {
+        client
+            .useXpath()
+            .moveToElement(this.testsPageNameTreeElement, 0, 0, function () {
                 client.mouseButtonClick('right');
                 self.pageTreeObject.expect.section('@contextMenu').to.be.visible.before(client.globals.loadTime.defaultWait);
             });
-        });
     },
 
     /**
@@ -277,17 +338,20 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test context menu on homepage' : function (client) {
+    'Test context menu on homepage': function (client) {
         'use strict';
 
         var self = this;
 
-        client.element('css selector', this.pageTreeObject.elements.rootNode.selector, function (result) {
-            client.moveTo(result.value.ELEMENT, 0, 0, function () {
-                client.mouseButtonClick('right');
-                self.pageTreeObject.expect.section('@contextMenu').to.be.visible.before(client.globals.loadTime.defaultWait);
+        client
+            .useCss()
+            .refreshPage()
+            .element('css selector', this.treeViewSection.elements.home.selector, function (result) {
+                client.moveTo(result.value.ELEMENT, 0, 0, function () {
+                    client.mouseButtonClick('right');
+                    self.pageTreeObject.expect.section('@contextMenu').to.be.visible.before(client.globals.loadTime.defaultWait);
+                });
             });
-        });
         this.contextMenuSection.checkHomeDisplayedButtons();
     },
 
@@ -297,19 +361,26 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test context menu after clicking on copy' : function (client) {
+    'Test context menu after clicking on copy': function (client) {
         'use strict';
 
-        this.pageTreeObject
-            .contextMenuAction('copyButton', this.pageTreeObject.elements.firstChildNode.selector)
-            .expect.element('@firstChildNodeSpan').to.have.css('outline-style', 'Check if the copied page has a dotted frame');
-        // open the context menu on the second page under home
-        client.element('css selector', this.pageTreeObject.elements.secondChildNode.selector, function (result) {
-            client.moveTo(result.value.ELEMENT, 0, 0, function () {
-                client.mouseButtonClick('right');
+        var self = this;
+
+        client
+            .useCss()
+            .refreshPage()
+            .useXpath()
+            .moveToElement(this.testsPageNameTreeElement, 0, 0, function () {
+                self.contextMenuSection.clickElementOnContextMenu('copyButton');
+                client.pause(client.globals.loadTime.minimumWait);
+                self.treeViewSection.expect.element('@firstItem').to.have.css('outline-style', 'Check if the copied page has a dotted frame');
+            })
+            .useCss()
+            .element('css selector', this.treeViewSection.elements.lastItem.selector, function (result) {
+                client.moveTo(result.value.ELEMENT, 0, 0, function () {
+                    client.mouseButtonClick('right');
+                });
             });
-        });
-        // check if the paste, paste before, paste after buttons are displayed
         this.contextMenuSection.checkCopyDisplayedButtons();
     },
 
@@ -319,24 +390,39 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test create button from contextual menu' : function (client) {
+    'Test create button from contextual menu': function (client) {
         'use strict';
 
-        this.pageTreeObject
-            .contextMenuAction('addButton', this.pageTreeObject.elements.firstChildNode.selector)
-            // test if the page tree popin is still open
-            .assert.elementPresent('@pageTree');
-        // test if the create page popin appears
+        var self = this;
+
+        // find page and create a test sub page
+        client
+            .useXpath()
+            .moveToElement(this.testsPageNameTreeElement, 0, 0, function () {
+                self.contextMenuSection.clickElementOnContextMenu('addButton');
+            })
+            .useCss();
         this.pagePopinsObject.expect.section('@createPopin').to.be.visible.after(client.globals.loadTime.pageTree.createPagePopin);
         client.pause(client.globals.loadTime.pageTree.createPagePopin);
-        // test the create page form and create a new page
-        this.pagePopinsObject.section.createPopin.createNewPage();
+        this.pagePopinsObject.section.createPopin.createNewPage(this.testsPageNameContextMenu);
         client.pause(client.globals.loadTime.pageTree.createPage);
-        // open the first page in tree
-        this.pageTreeObject.click('@firstChildNodeOpenSubpages');
+        this.treeViewSection
+            .waitForElementVisible('@selectedFolderItem', client.globals.loadTime.defaultWait)
+            .click('@selectedFolderItem');
         client.pause(client.globals.loadTime.pageTree.waitForSubpagesToShow);
         // check if the page created before is the first subpage
-        this.pageTreeObject.checkNewCreatedPage();
+        this.treeViewSection.getText('@selectedFolderItemChild', function (result) {
+            self.treeViewSection.assert.ok(result.value === self.testsPageNameContextMenu, 'Check if the new created page is the first subpage');
+        });
+        // delete the created page
+        client.element('css selector', this.treeViewSection.elements.selectedFolderItemChild.selector, function (result) {
+            client.moveTo(result.value.ELEMENT, 0, 0, function () {
+                self.contextMenuSection.clickElementOnContextMenu('removeButton');
+                client.pause(client.globals.loadTime.pageTree.deletePagePopin);
+                self.pagePopinsObject.section.deletePopin.deletePage();
+                client.pause(client.globals.loadTime.toolbar);
+            });
+        });
     },
 
     /**
@@ -345,18 +431,33 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test edit button from contextual menu' : function (client) {
+    'Test edit button from contextual menu': function (client) {
         'use strict';
 
-        this.pageTreeObject
-            .contextMenuAction('editButton', this.pageTreeObject.elements.firstChildNode.selector)
-            // test if the page tree popin is still open
-            .assert.elementPresent('@pageTree');
+        var self = this;
+
+        client
+            .useXpath()
+            .moveToElement(this.testsPageNameTreeElement, 0, 0, function () {
+                self.contextMenuSection.clickElementOnContextMenu('editButton');
+                // test if the page tree popin is still open
+                self.pageTreeObject.assert.elementPresent('@pageTree');
+            });
         // test if the edit page popin appears
         this.pagePopinsObject.expect.section('@editPopin').to.be.visible.after(client.globals.loadTime.pageTree.editPagePopin);
         client.pause(client.globals.loadTime.pageTree.editPagePopin);
-        // close the edit popin
-        this.pagePopinsObject.section.editPopin.click('@closeButton');
+        this.pagePopinsObject.section.editPopin.assertElementsPresent();
+        // edit the test page and check that the edit was done succesfully
+        this.testsPageName = client.globals.pageTree.createNewPage + ' ' + randomNumbersFor.testsEditContextMenu;
+        this.testsPageNameTreeElement = testsPageNameTreeElement.replace('pagenamehere', this.testsPageName);
+        this.pagePopinsObject.section.editPopin.editPage(this.testsPageName);
+        client
+            .pause(client.globals.loadTime.toolbar)
+            .useXpath()
+            .getText(this.testsPageNameTreeElement, function (result) {
+                this.assert.ok(result.value === self.testsPageName, 'Check if the page was edited succesfully');
+            })
+            .useCss();
     },
 
     /**
@@ -365,22 +466,27 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test delete from contextual menu' : function (client) {
+    'Test delete from contextual menu': function (client) {
         'use strict';
 
-        this.pageTreeObject
-            // make sure to have context menu closed by clicking somewhere else
-            .contextMenuAction('removeButton', this.pageTreeObject.elements.firstChildNode.selector)
-            // test if the page tree popin is still open
-            .assert.elementPresent('@pageTree');
+        var self = this;
+
+        client
+            .useXpath()
+            .moveToElement(this.testsPageNameTreeElement, 0, 0, function () {
+                self.contextMenuSection.clickElementOnContextMenu('removeButton');
+                // test if the page tree popin is still open
+                self.pageTreeObject.assert.elementPresent('@pageTree');
+            })
+            .useCss();
         // test if the delete page popin appears
-        this.pagePopinsObject.expect.section('@deletePopin').to.be.visible.after(client.globals.loadTime.pageTree.deletePagePopin);
         client.pause(client.globals.loadTime.pageTree.deletePagePopin);
+        this.pagePopinsObject.expect.section('@deletePopin').to.be.visible.after(client.globals.loadTime.pageTree.deletePagePopin);
         // test that text and buttons are displayed
         this.pagePopinsObject.section.deletePopin
             .assertElementsPresent()
             // close the delete popin
-            .click('@closeButton');
+            .click('@cancelButton');
     },
 
     /**
@@ -389,22 +495,36 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test browse to from contextual menu' : function (client) {
+    'Test browse to from contextual menu': function (client) {
         'use strict';
 
         var self = this;
 
+        // get the old url
         client.url(function (oldUrl) {
-            self.pageTreeObject.contextMenuAction('browseToButton', self.pageTreeObject.elements.rootNode.selector);
+            // find the test page and double click it
             client
+                .useXpath()
+                .moveToElement(self.testsPageNameTreeElement, 0, 0, function () {
+                    self.contextMenuSection.clickElementOnContextMenu('browseToButton');
+                })
+                .useCss()
+                // wait for the refresh to be done
                 .pause(client.globals.loadTime.toolbar)
-                // get the new url
                 .url(function (currentUrl) {
-                    // check old url with the new url
+                    // get the new url and check that is different then the old url
                     this.assert.ok(oldUrl.value !== currentUrl.value, 'Check if the redirect has been made');
-                    self.pageTreeObject.assert.elementPresent('@pageTree');
                 });
         });
+         // test the page tree popin to be visible again
+        this.pageTreeObject.expect.element('@pageTree').to.be.visible.after(client.globals.loadTime.toolbar);
+        // wait for the popin to be loaded
+        client.pause(client.globals.loadTime.pageTree.loadPopin);
+        // do a redirect to home
+        this.treeViewSection.moveToElement('@home', 0, 0, function () {
+            self.contextMenuSection.clickElementOnContextMenu('browseToButton');
+        });
+        client.pause(client.globals.loadTime.toolbar);
     },
 
     /**
@@ -413,26 +533,29 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test paste as subpage from contextual menu' : function (client) {
+    'Test paste as subpage from contextual menu': function (client) {
         'use strict';
 
-        var pageName;
+        var self = this;
 
-        this.pageTreeObject
-            .contextMenuAction('cutButton', this.pageTreeObject.elements.secondChildNode.selector)
-            .getText(this.pageTreeObject.elements.secondChildNode.selector, function (result) {
-                pageName = result.value;
-            })
-            .expect.element('@secondChildNodeSpan').to.have.css('outline-style', 'Check if the cutted page has a dotted frame');
-        this.pageTreeObject
-            .contextMenuAction('pasteButton', this.pageTreeObject.elements.firstChildNode.selector)
-            // click and pause to load the subpages
-            .click('@firstChildNodeOpenSubpages');
         client
-            .pause(client.globals.loadTime.pageTree.waitForSubpagesToShow)
-            // test if the page name is the same in the new position
-            .getText(this.pageTreeObject.elements.firstChildNodeFirstSubpage.selector, function (result) {
-                this.assert.ok(pageName === result.value, 'Check if the page was successfully moved as a subpage');
+            .useXpath()
+            .moveToElement(this.testsPageNameTreeElement, 0, 0, function () {
+                self.contextMenuSection.clickElementOnContextMenu('cutButton');
+            })
+            .getCssProperty(this.testsPageNameTreeElement, 'outline-style', function (result) {
+                this.assert.ok(result.value === 'dashed', 'Check if the cutted page has a dotted frame');
+            })
+            .useCss();
+        this.treeViewSection
+            .moveToElement('@firstItemFolder', 0, 0, function () {
+                self.contextMenuSection.clickElementOnContextMenu('pasteButton');
+            })
+            .click('@firstItemFolderToggler');
+        client
+            .pause(client.globals.loadTime.defaultWait)
+            .getText(this.treeViewSection.elements.selectedFolderItemChild.selector, function (result) {
+                this.assert.ok(result.value === self.testsPageName, 'Check if the page was successfully moved as a subpage');
             });
     },
 
@@ -442,22 +565,21 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test paste before from contextual menu' : function (client) {
+    'Test paste before from contextual menu': function (client) {
         'use strict';
 
-        var pageName;
+        var self = this;
 
-        this.pageTreeObject
-            .contextMenuAction('cutButton', this.pageTreeObject.elements.secondChildNode.selector)
-            // get the second page name
-            .getText(this.pageTreeObject.elements.secondChildNode.selector, function (result) {
-                pageName = result.value;
-            })
-            .contextMenuAction('pasteBeforeButton', this.pageTreeObject.elements.firstChildNode.selector)
-            .api.pause(client.globals.loadTime.minimumWait)
-            // test if the page name is the same in the new position
-            .getText(this.pageTreeObject.elements.firstChildNode.selector, function (result) {
-                this.assert.ok(pageName === result.value, 'Check if the page was successfully moved before');
+        this.treeViewSection.moveToElement('@firstItemFolderFirstChild', 0, 0, function () {
+            self.contextMenuSection.clickElementOnContextMenu('cutButton');
+        });
+        this.treeViewSection.moveToElement('@firstNonFolderItem', 0, 0, function () {
+            self.contextMenuSection.clickElementOnContextMenu('pasteBeforeButton');
+        });
+        client
+            .pause(client.globals.loadTime.minimumWait)
+            .getText(this.treeViewSection.elements.firstNonFolderItem.selector, function (result) {
+                this.assert.ok(result.value === self.testsPageName, 'Check if the page was successfully moved before');
             });
     },
 
@@ -467,22 +589,29 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test paste after from contextual menu' : function (client) {
+    'Test paste after from contextual menu': function (client) {
         'use strict';
 
-        var pageName;
+        var self = this;
 
-        this.pageTreeObject
-            .contextMenuAction('cutButton', this.pageTreeObject.elements.firstChildNode.selector)
-            // get the first page name
-            .getText(this.pageTreeObject.elements.firstChildNode.selector, function (result) {
-                pageName = result.value;
+        client
+            .useXpath()
+            .moveToElement(this.testsPageNameTreeElement, 0, 0, function () {
+                self.contextMenuSection.clickElementOnContextMenu('cutButton');
             })
-            .contextMenuAction('pasteAfterButton', this.pageTreeObject.elements.secondChildNode.selector)
-            .api.pause(client.globals.loadTime.minimumWait)
-            // test if the page name is the same in the new position
-            .getText(this.pageTreeObject.elements.secondChildNode.selector, function (result) {
-                this.assert.ok(pageName === result.value, 'Check if the page was successfully moved after');
+            .useCss()
+            // select all non folder items and paste after the last element
+            .querySelectorAll(this.treeViewSection.elements.nonFolderItem.selector, function (result) {
+                client.moveTo(result.value[(result.value.length - 1)].ELEMENT, 0, 0, function () {
+                    self.contextMenuSection.clickElementOnContextMenu('pasteAfterButton');
+                });
+            })
+            .pause(client.globals.loadTime.minimumWait)
+            // select all non folder items and check the last elements text to match our page name
+            .querySelectorAll(this.treeViewSection.elements.nonFolderItem.selector, function (result) {
+                client.elementIdText(result.value[(result.value.length - 1)].ELEMENT, function (textResult) {
+                    this.assert.ok(textResult.value === self.testsPageName, 'Check if the page was successfully moved after');
+                });
             });
     },
 
@@ -492,24 +621,18 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test click arrow of folder shows subpages' : function (client) {
+    'Test click arrow of folder shows subpages': function (client) {
         'use strict';
 
-        var self = this;
-
-        // click and pause to load the subpages
-        this.pageTreeObject.click('@firstChildNodeOpenSubpages');
-        // check state of toggler, if closed then click on it again
+        // refresh the page to have the tree in it's open state
         client
-            .element('css selector', this.pageTreeObject.elements.firstChildNodeOpenSubpages.selector, function (result) {
-                client.elementIdAttribute(result.value.ELEMENT, 'class', function (classResult) {
-                    if (classResult.value.indexOf(toggleClosedClass) > -1) {
-                        self.pageTreeObject.click('@firstChildNodeOpenSubpages');
-                    }
-                });
-            })
+            .refreshPage()
+            .pause(client.globals.loadTime.pageTree.loadPopin);
+        // click on the first folder toggler to show subpages
+        this.treeViewSection.click('@firstItemFolderToggler');
+        client
             .pause(client.globals.loadTime.pageTree.waitForSubpagesToShow)
-            .elements('css selector', this.pageTreeObject.elements.firstChildNodeSubpages.selector, function (result) {
+            .elements('css selector', this.treeViewSection.elements.firstItemFolderChildren.selector, function (result) {
                 result.value.forEach(function (element) {
                     client.elementIdDisplayed(element.ELEMENT, function (displayed) {
                         this.assert.ok(displayed.value === true, 'Check subpage to be displayed');
@@ -524,14 +647,14 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test click arrow of folder hides subpages' : function (client) {
+    'Test click arrow of folder hides subpages': function (client) {
         'use strict';
 
-        // click and pause to hide the subpages
-        this.pageTreeObject.click('@firstChildNodeOpenSubpages');
+        // click on the first folder toggler to hide subpages
+        this.treeViewSection.click('@firstItemFolderToggler');
         client
             .pause(client.globals.loadTime.pageTree.waitForSubpagesToShow)
-            .elements('css selector', this.pageTreeObject.elements.firstChildNodeSubpages.selector, function (result) {
+            .elements('css selector', this.treeViewSection.elements.firstItemFolderChildren.selector, function (result) {
                 result.value.forEach(function (element) {
                     client.elementIdDisplayed(element.ELEMENT, function (displayed) {
                         this.assert.ok(displayed.value === false, 'Check subpage to not be displayed');
@@ -543,20 +666,26 @@ module.exports = {
     /**
      * Test actions dropdown
      * 
+     * @param {Object} client
      * @returns {undefined}
      */
-    'Test actions dropdown' : function () {
+    'Test actions dropdown': function (client) {
         'use strict';
 
         // check if the actions dropdown is present and is not disabled anymore
+        client
+            .useXpath()
+            .click(this.testsPageNameTreeElement)
+            .useCss();
         this.pageTreeObject
-            .click('@secondChildNode')
             .assert.elementPresent('@actionButton')
-            .assert.cssClassNotPresent('@actionButton', disabledClass)
+            .assert.cssClassNotPresent('@actionButton', 'disabled')
             .assert.elementPresent('@actionButtonDropdown')
-            .assert.cssClassNotPresent('@actionButtonDropdown', disabledClass);
+            .assert.cssClassNotPresent('@actionButtonDropdown', 'disabled');
         // check available actions against contextul menu actions
-        this.pageTreeObject.section.actionsMenu.checkActionsAgainstContextMenu();
+        this.actionsMenuSection.checkActionsAgainstContextMenu();
+        // make sure to have the context menu closed
+        this.pageTreeObject.click('@navBarBrand');
     },
 
     /**
@@ -565,29 +694,39 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test create button from actions menu' : function (client) {
+    'Test create button from actions menu': function (client) {
         'use strict';
 
-        // activate actions menu and open the list of available actions
-        this.pageTreeObject
-            .click('@secondChildNode')
-            .click('@actionButtonDropdown');
-        // click on the add button from the actions menu
-        this.pageTreeObject.section.actionsMenu.click('@addButton');
-        // test if the page tree popin is still open
-        this.pageTreeObject.assert.elementPresent('@pageTree');
-        // test if the create page popin appears
+        var self = this;
+
+        // find page and create a test sub page
+        client
+            .useXpath()
+            .click(this.testsPageNameTreeElement)
+            .useCss();
+        this.pageTreeObject.click('@actionButtonDropdown');
+        this.actionsMenuSection.click('@addButton');
         this.pagePopinsObject.expect.section('@createPopin').to.be.visible.after(client.globals.loadTime.pageTree.createPagePopin);
         client.pause(client.globals.loadTime.pageTree.createPagePopin);
-        // test the create page form and create a new page
-        this.pagePopinsObject.section.createPopin.createNewPage();
+        this.pagePopinsObject.section.createPopin.createNewPage(this.testsPageNameActionsMenu);
         client.pause(client.globals.loadTime.pageTree.createPage);
-        // open the first page in tree
-        this.pageTreeObject
-            .click('@firstChildNodeOpenSubpages')
-            .api.pause(client.globals.loadTime.pageTree.waitForSubpagesToShow);
+        this.treeViewSection
+            .waitForElementVisible('@selectedFolderItem', client.globals.loadTime.defaultWait)
+            .click('@selectedFolderItem');
+        client.pause(client.globals.loadTime.pageTree.waitForSubpagesToShow);
         // check if the page created before is the first subpage
-        this.pageTreeObject.checkNewCreatedPage();
+        this.treeViewSection.getText('@selectedFolderItemChild', function (result) {
+            self.treeViewSection.assert.ok(result.value === self.testsPageNameActionsMenu, 'Check if the new created page is the first subpage');
+        });
+        // delete the created page
+        client.element('css selector', this.treeViewSection.elements.selectedFolderItemChild.selector, function (result) {
+            client.moveTo(result.value.ELEMENT, 0, 0, function () {
+                self.contextMenuSection.clickElementOnContextMenu('removeButton');
+                client.pause(client.globals.loadTime.pageTree.deletePagePopin);
+                self.pagePopinsObject.section.deletePopin.deletePage();
+                client.pause(client.globals.loadTime.toolbar);
+            });
+        });
     },
 
     /**
@@ -596,22 +735,33 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test edit button from actions menu' : function (client) {
+    'Test edit button from actions menu': function (client) {
         'use strict';
 
-        // activate actions menu and open the list of available actions
-        this.pageTreeObject
-            .click('@secondChildNode')
-            .click('@actionButtonDropdown');
-        // click on the add button from the actions menu
-        this.pageTreeObject.section.actionsMenu.click('@editButton');
-        // test if the page tree popin is still open
-        this.pageTreeObject.assert.elementPresent('@pageTree');
+        var self = this;
+
+        // find page and create a test sub page
+        client
+            .useXpath()
+            .click(this.testsPageNameTreeElement)
+            .useCss();
+        this.pageTreeObject.click('@actionButtonDropdown');
+        this.actionsMenuSection.click('@editButton');
         // test if the edit page popin appears
         this.pagePopinsObject.expect.section('@editPopin').to.be.visible.after(client.globals.loadTime.pageTree.editPagePopin);
         client.pause(client.globals.loadTime.pageTree.editPagePopin);
-        // close the edit popin
-        this.pagePopinsObject.section.editPopin.click('@closeButton');
+        this.pagePopinsObject.section.editPopin.assertElementsPresent();
+        // edit the test page and check that the edit was done succesfully
+        this.testsPageName = client.globals.pageTree.createNewPage + ' ' + randomNumbersFor.testsEditActionsMenu;
+        this.testsPageNameTreeElement = testsPageNameTreeElement.replace('pagenamehere', this.testsPageName);
+        this.pagePopinsObject.section.editPopin.editPage(this.testsPageName);
+        client
+            .pause(client.globals.loadTime.toolbar)
+            .useXpath()
+            .getText(this.testsPageNameTreeElement, function (result) {
+                this.assert.ok(result.value === self.testsPageName, 'Check if the page was edited succesfully');
+            })
+            .useCss();
     },
 
     /**
@@ -620,25 +770,27 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test delete from actions menu' : function (client) {
+    'Test delete from actions menu': function (client) {
         'use strict';
 
-        // activate actions menu and open the list of available actions
-        this.pageTreeObject
-            .click('@firstChildNode')
-            .click('@actionButtonDropdown');
-        // click on the delete button from the actions menu
-        this.pageTreeObject.section.actionsMenu.click('@removeButton');
-        // test if the page tree popin is still open
-        this.pageTreeObject.assert.elementPresent('@pageTree');
+        // refresh the page then click the test page
+        client
+            .refreshPage()
+            .pause(client.globals.loadTime.pageTree.loadPopin)
+            .useXpath()
+            .click(this.testsPageNameTreeElement)
+            .useCss();
+        // click the remove button
+        this.pageTreeObject.click('@actionButtonDropdown');
+        this.actionsMenuSection.click('@removeButton');
         // test if the delete page popin appears
-        this.pagePopinsObject.expect.section('@deletePopin').to.be.visible.after(client.globals.loadTime.pageTree.deletePagePopin);
         client.pause(client.globals.loadTime.pageTree.deletePagePopin);
+        this.pagePopinsObject.expect.section('@deletePopin').to.be.visible.after(client.globals.loadTime.pageTree.deletePagePopin);
         // test that text and buttons are displayed
         this.pagePopinsObject.section.deletePopin
             .assertElementsPresent()
             // close the delete popin
-            .click('@closeButton');
+            .click('@cancelButton');
     },
 
     /**
@@ -647,39 +799,52 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    'Test browse to from actions menu' : function (client) {
+    'Test browse to from actions menu': function (client) {
         'use strict';
 
         var self = this;
 
-        client.url(function (oldUrl) {
-            self.pageTreeObject
-                    .click('@secondChildNode')
-                    // open actions menu
-                    .click('@actionButtonDropdown');
-            // click on browse to
-            self.pageTreeObject.section.actionsMenu.click('@browseToButton');
-            client
-                .pause(client.globals.loadTime.toolbar)
-                .url(function (currentUrl) {
-                    // get the new url and check to be different then the old url
-                    this.assert.ok(oldUrl.value !== currentUrl.value, 'Check if the redirect has been made');
-                    self.pageTreeObject.assert.elementPresent('@pageTree');
-                });
+        this.treeViewSection.click('@home');
+        // get the old url
+        client
+            .url(function (oldUrl) {
+                // find the test page and double click it
+                client
+                    .useXpath()
+                    .click(self.testsPageNameTreeElement)
+                    .useCss();
+                self.pageTreeObject.click('@actionButtonDropdown');
+                self.actionsMenuSection.click('@browseToButton');
+                client
+                    // wait for the refresh to be done
+                    .pause(client.globals.loadTime.toolbar)
+                    .url(function (currentUrl) {
+                        // get the new url and check that is different then the old url
+                        this.assert.ok(oldUrl.value !== currentUrl.value, 'Check if the redirect has been made');
+                    });
+            });
+        // test the page tree popin to be visible again
+        this.pageTreeObject.expect.element('@pageTree').to.be.visible.after(client.globals.loadTime.toolbar);
+        client.pause(client.globals.loadTime.pageTree.loadPopin);
+        // do a redirect to home
+        this.treeViewSection.moveToElement('@home', 0, 0, function () {
+            self.contextMenuSection.clickElementOnContextMenu('browseToButton');
         });
+        client.pause(client.globals.loadTime.toolbar);
     },
 
     /**
      * Test search page tree
      * 
+     * @param {Object} client
      * @returns {undefined}
      */
-    'Test search page tree' : function () {
+    'Test search page tree': function () {
         'use strict';
 
-        this.pageTreeObject.section.search
-            .search()
-            .checkSearchResults()
+        this.searchSection
+            .search(this.testsPageName)
+            .checkSearchResults(this.testsPageName)
             .clearValue('@searchInput')
             .click('@submitButton');
     },
@@ -690,10 +855,26 @@ module.exports = {
      * @param {Object} client
      * @returns {undefined}
      */
-    after : function (client) {
+    after: function (client) {
         'use strict';
 
+        var self = this;
+
+        // refresh to make sure no duplicate delete popin is present then delete the test page
         client
+            .useCss()
+            .refreshPage()
+            .pause(client.globals.loadTime.pageTree.loadPopin)
+            .useXpath()
+            .moveToElement(this.testsPageNameTreeElement, 0, 0, function () {
+                self.contextMenuSection.clickElementOnContextMenu('removeButton');
+                client.pause(client.globals.loadTime.pageTree.deletePagePopin);
+                self.pagePopinsObject.section.deletePopin.deletePage();
+            })
+            .useCss();
+        // logout and end test
+        client
+            .pause(client.globals.loadTime.toolbar)
             .logout()
             .end();
     }

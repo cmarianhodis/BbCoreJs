@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -28,16 +28,69 @@
 
 var createCommands = {
     // create a new page
-    createNewPage: function () {
+    createNewPage: function (pageName) {
+        'use strict';
+
+        this
+            .setValue('@title', pageName)
+            .click('@layoutFirstNonEmptyOption')
+            .click('@submit');
+
+        return this;
+    },
+    // assert that all elements from create new page popin are present
+    assertElementsPresent: function () {
         'use strict';
 
         this
             .assert.elementPresent('@title')
             .assert.elementPresent('@alttitle')
             .assert.elementPresent('@layout')
-            .assert.elementPresent('@submit')
-            .setValue('@title', this.api.globals.pageTree.createNewPage)
-            .click('@layoutFirstNonEmptyOption')
+            .assert.elementPresent('@submit');
+
+        return this;
+    }
+};
+
+var editCommands = {
+    // assert that all elements from delete popin are present
+    assertElementsPresent: function () {
+        'use strict';
+
+        var self = this;
+
+        // check that the elements are present
+        this
+            .assert.elementPresent('@title')
+            .assert.elementPresent('@alttitle')
+            .assert.elementPresent('@url')
+            .assert.elementPresent('@target')
+            .assert.elementPresent('@redirect')
+            .assert.elementPresent('@layout')
+            .assert.elementPresent('@submit');
+
+        // check that these elements have values
+        this.getValue('@title', function (result) {
+            self.assert.ok(result.value !== '', 'Check if title has value');
+        });
+        this.getValue('@url', function (result) {
+            self.assert.ok(result.value !== '', 'Check if url has value');
+        });
+        this.getValue('@target', function (result) {
+            self.assert.ok(result.value !== '', 'Check if target has value');
+        });
+        this.getValue('@layout', function (result) {
+            self.assert.ok(result.value !== '', 'Check if layout has value');
+        });
+
+        return this;
+    },
+    editPage: function (pageName) {
+        'use strict';
+
+        this
+            .clearValue('@title')
+            .setValue('@title', pageName)
             .click('@submit');
 
         return this;
@@ -45,12 +98,19 @@ var createCommands = {
 };
 
 var deleteCommands = {
+    // delete page
+    deletePage: function () {
+        'use strict';
+
+        this.click('@validateButton');
+
+        return this;
+    },
     // assert that all elements from delete popin are present
     assertElementsPresent: function () {
         'use strict';
 
         this
-            .assert.elementPresent('@warningTitle')
             .assert.elementPresent('@warningText')
             .assert.elementPresent('@cancelButton')
             .assert.elementPresent('@validateButton');
@@ -84,7 +144,29 @@ module.exports = {
         },
         editPopin: {
             selector: '.edit-page-popin',
+            commands: [editCommands],
             elements: {
+                title: {
+                    selector: 'div.element_title input[type=text]'
+                },
+                alttitle: {
+                    selector: 'div.element_alttitle input[type=text]'
+                },
+                url: {
+                    selector: 'div.element_url input[type=text]'
+                },
+                target: {
+                    selector: 'div.element_target select'
+                },
+                redirect: {
+                    selector: 'div.element_redirect input[type=text]'
+                },
+                layout: {
+                    selector: 'div.element_layout_uid select'
+                },
+                submit: {
+                    selector: 'button.bb-submit-form'
+                },
                 closeButton: {
                     selector: 'div.ui-dialog-titlebar button.ui-dialog-titlebar-close'
                 }
@@ -94,11 +176,8 @@ module.exports = {
             selector: '.delete-page-popin',
             commands: [deleteCommands],
             elements: {
-                warningTitle: {
-                    selector: 'h3.text-danger'
-                },
                 warningText: {
-                    selector: 'p.text-danger'
+                    selector: 'p'
                 },
                 cancelButton: {
                     selector: 'button.bb-delete-page-cancel'

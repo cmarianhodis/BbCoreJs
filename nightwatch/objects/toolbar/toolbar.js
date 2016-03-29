@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -18,12 +18,12 @@
  */
 
 /**
- * Login object
+ * Toolbar object
  *
  * @category    NightWatch
  * @subcategory PageObjects
  * @copyright   Lp digital system
- * @author      
+ * @author      Marian Hodis <marian.hodis@lp-digital.fr>
  */
 
 module.exports = {
@@ -31,6 +31,20 @@ module.exports = {
         toolbar: {
             selector: '#bb5-ui',
             sections: {
+                tabs: {
+                    selector: 'ul.nav.nav-tabs',
+                    elements: {
+                        tabContentLink: {
+                            selector: 'li#edit-tab-content a'
+                        },
+                        tabBlocksLink: {
+                            selector: 'li#edit-tab-block a'
+                        },
+                        tabPageLink: {
+                            selector: 'li#edit-tab-page a'
+                        }
+                    }
+                },
                 userSettings: {
                     selector: '#bb-current-user',
                     elements: {

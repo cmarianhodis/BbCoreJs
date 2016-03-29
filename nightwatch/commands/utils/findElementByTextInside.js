@@ -18,43 +18,47 @@
  */
 
 /**
- * Custom command for droping an imagge in an hidden input
- * Checks if the provided url is a valid url
+ * Custom command for finding an html element containing text
  *
  * @category    NightWatch
  * @subcategory CustomCommands
  * @copyright   Lp digital system
- * @author      Bogdan Oanes <bogdan.oanes@lp-digital.fr>
+ * @author      Marian Hodis <marian.hodis@lp-digital.fr>
  */
 
-var path = require('path');
-
-module.exports.command = function (indexNumber, className, fileName, callback) {
+module.exports.command = function (selector, text, callback) {
     'use strict';
 
     var self = this,
-        fileFullPath = path.resolve(path.dirname()) + fileName;
+        elements;
 
     this.execute(
-        function (indexNumber, className) {
-            var hiddenElement = document.getElementsByClassName(className);
+        function (selector, text) {
+            var key,
+                element,
+                foundElement;
 
-            hiddenElement[indexNumber].style.visibility = 'visible';
-            hiddenElement[indexNumber].style.zIndex = '999999';
-            hiddenElement[indexNumber].style.width = '10px';
-            hiddenElement[indexNumber].style.height = '10px';
-
-            return true;
+            elements = document.querySelectorAll(selector);
+            for (key in elements) {
+                if (elements.hasOwnProperty(key)) {
+                    element = elements[key];
+                    if (element.textContent === text) {
+                        foundElement = element;
+                        break;
+                    }
+                }
+            }
+            return foundElement;
         },
 
-        [indexNumber, className],
+        [selector, text],
 
         function (result) {
             if (typeof callback === 'function') {
                 callback.call(self, result);
             }
         }
-    ).pause(2000).setValue('input.' + className + ':last-child', fileFullPath);
+    );
 
     return this;
 };

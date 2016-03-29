@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -62,16 +62,6 @@ module.exports = {
         this.loginObject = client.page.login();
         this.loginSection = this.loginObject.section.login;
         this.loginData = client.globals.login;
-    },
-
-    /**
-     * Open the baseUrl before each test
-     * 
-     * @param {Object} client
-     * @returns {undefined}
-     */
-    beforeEach : function (client) {
-        'use strict';
 
         client.openUrl(client.globals.baseUrl);
     },
@@ -99,6 +89,7 @@ module.exports = {
         client
             .windowSetClassOnElement('', testRefreshClass)
             .closeLoginPopin()
+            .pause(client.globals.loadTime.defaultWait)
             .expect.element('body').to.not.have.attribute('class').which.contains(testRefreshClass);
     },
 

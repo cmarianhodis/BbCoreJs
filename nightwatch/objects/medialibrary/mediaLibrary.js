@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -18,7 +18,7 @@
  */
 
 /**
- * Page tree object
+ * Media library object
  *
  * @category    NightWatch
  * @subcategory PageObjects
@@ -82,13 +82,14 @@ module.exports = {
             selector: 'body .ui-widget-overlay'
         },
         firstChildNode: {
-            selector: 'div.mediaFolder-tree ul li:nth-child(1) div'
+            selector: '//div[contains(@class, "mediaFolder-tree")]//ul[count(preceding-sibling::*)+count(following-sibling::*)=0]//li[count(preceding-sibling::*)+count(following-sibling::*)=0]/div',
+            locateStrategy: 'xpath'
         },
         secondChildNode: {
             selector: 'div.mediaFolder-tree ul li > ul li:nth-child(1) div'
         },
         lastChildNode: {
-            selector: 'div.mediaFolder-tree ul li > ul li:last-child div'
+            selector: 'div.mediaFolder-tree ul li > ul li:last-child:not(:only-child) div'
         },
         actionSelectedNode: {
             selector: 'div.mediaFolder-tree li.action-selected div span'
@@ -98,6 +99,10 @@ module.exports = {
         },
         seePopinPictureWrapper: {
             selector: '.ui-dialog-content img.bb-content'
+        },
+        seePopinPictureDialogClose: {
+            selector: '//div[contains(@class, "ui-dialog-content")]//img[contains(@class, "bb-content")]/ancestor::div[contains(@class, "ui-dialog")]//button[contains(@class, "ui-dialog-titlebar-close")]',
+            locateStrategy: 'xpath'
         }
     },
     sections: {
@@ -196,8 +201,7 @@ module.exports = {
             }
         },
         contextMenu: {
-            selector: '//div[contains(@class, "bb5-context-menu")][last()]',
-            locateStrategy: 'xpath',
+            selector: 'div.bb5-context-menu:last-child',
             commands: [contextMenuCommands],
             elements: {
                 listItem: {

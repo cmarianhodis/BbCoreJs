@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -55,7 +55,9 @@ module.exports.command = function (url, callback) {
         if (!urlPattern.test(url)) {
             throw 'Provided base url is not a valid url!';
         }
-        this.url(url);
+        this
+            .url(url)
+            .resizeWindow(1920, 1080);
 
         if (typeof callback === 'function') {
             callback.call(self);

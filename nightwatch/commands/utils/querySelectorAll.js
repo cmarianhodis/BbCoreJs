@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -18,23 +18,32 @@
  */
 
 /**
- * Page object
+ * Custom command for querySelectAll
  *
  * @category    NightWatch
- * @subcategory contentClickCommand
+ * @subcategory CustomCommands
  * @copyright   Lp digital system
- * @author      
+ * @author      Marian Hodis <marian.hodis@lp-digital.fr>
  */
 
-/*jslint browser: true*/
-/*global jQuery*/
-module.exports.command = function (client, contentClick) {
+module.exports.command = function (selector, callback) {
     'use strict';
 
-    client.execute(function (contentClick) {
-        jQuery(contentClick).click();
-        return true;
-    }, [contentClick]);
+    var self = this;
+
+    this.execute(
+        function (selector) {
+            return document.querySelectorAll(selector);
+        },
+
+        [selector],
+
+        function (result) {
+            if (typeof callback === 'function') {
+                callback.call(self, result);
+            }
+        }
+    );
 
     return this;
 };

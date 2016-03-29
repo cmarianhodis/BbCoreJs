@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -18,73 +18,103 @@
  */
 
 /**
- * Content object
+ * Content click test
  *
  * @category    NightWatch
  * @subcategory Tests
  * @copyright   Lp digital system
- * @author      flavia.fodor@lp-digital.fr
+ * @author      Marian Hodis <marian.hodis@lp-digital.fr>
  */
 
 module.exports = {
-
-   /**
-    * Before doing the tests, login into the backend
-    * 
-    */
-    before : function (client) {
+    /**
+     * Before doing the tests login into the backend and initialize objects
+     *
+     * @param {Object} client
+     * @returns {undefined}
+     */
+    before: function (client) {
         'use strict';
 
-        client.login();
+        // login and wait the page tree popin to load
+        client
+            .login()
+            .pause(client.globals.loadTime.toolbar);
 
-        this.pageObject = client.page.content();
-        this.sections = this.pageObject.section;
+        // initialize the objects
+        this.contentObject = client.page.content();
+        this.sections = this.contentObject.section;
+        this.toolbarObject = client.page.toolbar();
+        this.pageTreeObject = client.page.tree();
+        // close the page tree popin
+        this.pageTreeObject.section.pageTreeDialog.click('@closePopinButton');
+        // make sure to be on the blocks tab
+        this.toolbarObject.section.toolbar.section.tabs.click('@tabBlocksLink');
+        client.pause(client.globals.loadTime.defaultWait);
     },
 
     /**
-     * Test if border appears
-     * 
-     * Checks if after clicking a content the border appears
+     * Test ContentSet border and plugins
+     * Checks if after clicking a ContentSet the border and the plugins appear
+     *
+     * @param {Object} client
+     * @returns {undefined}
      * 
      */
-    'Test content border and plugins' : function (client) {
+    'Test ContentSet border and plugins': function (client) {
         'use strict';
 
-        var elementContent, sectionEl, sectionPlugin;
-        for (sectionEl in this.sections) {
-
-            if (this.sections.hasOwnProperty(sectionEl)) {
-
-                elementContent = this.sections[sectionEl];
-
-                client
-                     .pause(client.globals.loadTime.toolbar)
-                     .click('li#edit-tab-content > a')
-                     .clickContent(client, elementContent.selector)
-                     .pause(client.globals.loadTime.clickContent)
-                     // Checks if after clicking a content the border appears
-                     .waitForElementPresent(elementContent.elements.contentSelected.selector, client.globals.loadTime.defaultWait)
-                     .assert.visible(elementContent.elements.contentSelected.selector)
-                     // Test if plugins appear
-                     .waitForElementPresent(elementContent.elements.contentPlugins.selector, client.globals.loadTime.defaultWait)
-                     .assert.visible(elementContent.elements.contentPlugins.selector);
-
-                // Checks if after clicking a content all it's plugins appear
-                for (sectionPlugin in elementContent.section.plugins.elements) {
-                    if (elementContent.section.plugins.elements.hasOwnProperty(sectionPlugin)) {
-                        client.assert.visible(elementContent.section.plugins.elements[sectionPlugin].selector);
-                    }
-                }
-            }
-        }
+        // scroll to the location of the contentSet
+        client.getLocation(this.sections.contentSet.selector, function (location) {
+            client.execute('scrollTo(0,' + (location.value.y - 250) + ')');
+        });
+        // tests for contentSet section
+        this.contentObject.testSection('contentSet');
+        client
+            .click(this.sections.contentSet.selector)
+            .pause(client.globals.loadTime.defaultWait);
+        this.contentObject
+                .testCss(this.sections.contentSet.selector, 'box-shadow')
+                .testSection('plugins', this.sections.contentSet)
+                .testSectionElements(this.sections.contentSet.section.plugins);
     },
 
+    /**
+     * Test Content border and plugins
+     * Checks if after clicking a Content the border and the plugins appear
+     *
+     * @param {Object} client
+     * @returns {undefined}
+     */
+    'Test Content border and plugins': function (client) {
+        'use strict';
+
+        // scroll to the location of the content
+        client.getLocation(this.sections.content.selector, function (location) {
+            client.execute('scrollTo(0,' + (location.value.y - 250) + ')');
+        });
+        // tests for content section
+        this.contentObject.testSection('content');
+        client
+            .click(this.sections.content.selector)
+            .pause(client.globals.loadTime.defaultWait);
+        this.contentObject
+            .testCss(this.sections.content.selector, 'box-shadow')
+            .testSection('plugins', this.sections.content)
+            .testSectionElements(this.sections.content.section.plugins);
+    },
+
+    /**
+     * After all tests are done logout and close browser
+     *
+     * @param {Object} client
+     * @returns {undefined}
+     */
     after: function (client) {
         'use strict';
 
-        client.end();
+        client
+            .logout()
+            .end();
     }
 };
-
-
-

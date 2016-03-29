@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2011-2016 Lp digital system
  *
  * This file is part of BackBee.
@@ -18,21 +18,79 @@
  */
 
 /**
- * Page object
+ * Content object
  *
  * @category    NightWatch
  * @subcategory PageObjects
  * @copyright   Lp digital system
- * @author      flavia.fodor@lp-digital.fr
+ * @author      Marian Hodis <marian.hodis@lp-digital.fr>
  */
 
+var commands = {
+    testSectionElements: function (section) {
+        'use strict';
+
+        var element;
+
+        for (element in section.elements) {
+            if (section.elements.hasOwnProperty(element)) {
+                section.waitForElementVisible('@' + element, this.api.globals.loadTime.defaultWait);
+            }
+        }
+
+        return this;
+    },
+    testSection: function (sectionName, section) {
+        'use strict';
+
+        if (section !== undefined) {
+            section.expect.section('@' + sectionName).to.be.visible.before(this.api.globals.loadTime.defaultWait);
+        } else {
+            this.expect.section('@' + sectionName).to.be.visible.before(this.api.globals.loadTime.defaultWait);
+        }
+
+        return this;
+    },
+    testSectionAttribute: function (sectionName, attribute, value) {
+        'use strict';
+
+        this.expect.section('@' + sectionName).to.have.attribute(attribute).which.contains(value);
+
+        return this;
+    },
+    testCss: function (element, cssProperty) {
+        'use strict';
+
+        this.expect.element(element).to.have.css(cssProperty);
+
+        return this;
+    }
+};
+
 module.exports = {
+    commands: [commands],
     sections: {
-        article: {
-            selector: '[data-bb-identifier^="Article/Article"]:first',
+        contentSet: {
+            selector: 'div.container-fluid div.rootContentSet[data-bb-identifier^="ContentSet"]:first-child',
             sections: {
                 plugins: {
-                    selector : 'div.bb5-ui.bb5-content-actions.content-actions',
+                    selector: 'div.bb5-ui.bb5-content-actions.content-actions',
+                    elements: {
+                        contentPlus: {
+                            selector: 'a.fa.fa-plus'
+                        },
+                        contentSelector : {
+                            selector: 'a.fa.fa-th-large'
+                        }
+                    }
+                }
+            }
+        },
+        content: {
+            selector: 'div#content div.rootContentSet .bb-dnd:first-child',
+            sections: {
+                plugins: {
+                    selector: 'div.bb5-ui.bb5-content-actions.content-actions',
                     elements: {
                         pencil: {
                             selector: 'a.fa.fa-pencil'
@@ -45,42 +103,7 @@ module.exports = {
                         }
                     }
                 }
-            },
-            elements: {
-                contentSelected: {
-                    selector: '.bb-content.bb-dnd.bb-content-selected[data-bb-identifier^="Article/Article"]'
-                },
-                contentPlugins: {
-                    selector: '.bb-content.bb-dnd.bb-content-selected[data-bb-identifier^="Article/Article"] > div.bb5-ui.bb5-content-actions.content-actions'
-                }
-            }
-        },
-
-        contentset: {
-            selector: '[data-bb-identifier^="ContentSet"]:first',
-            sections: {
-                plugins: {
-                    selector : 'div.bb5-ui.bb5-content-actions.content-actions',
-                    elements: {
-                        plus : {
-                            selector: 'a.fa.fa-plus'
-                        },
-                        large : {
-                            selector: 'a.fa.fa-th-large'
-                        }
-                    }
-                }
-            },
-            elements: {
-                contentSelected: {
-                    selector: 'div.bb-content.bb-dnd.bb-content-selected[data-bb-identifier^="ContentSet"]'
-                },
-                contentPlugins: {
-                    selector: 'div.bb-content.bb-dnd.bb-content-selected[data-bb-identifier^="ContentSet"] > div.bb5-ui.bb5-content-actions.content-actions'
-                }
             }
         }
-
     }
-
 };
