@@ -1,6 +1,6 @@
 <p class="label">{{ element.getLabel() }}</p>
 <ul class="bb5-list-media bb5-list-media-is-list clearfix contentset_list" data-uid="{{ element.value }}" data-type="{{ element.classname }}">
-    <li class=""bb5-content-item">
+    <li class="bb5-content-item">
         <p>
             <a href="javascript:;" class="edit">
                 <img class="bb-content-img" src="{{ element.image }}" alt="{{ element.title }}">
@@ -11,5 +11,8 @@
         </p>
         <p>&nbsp;</p>
         <p><button type="button" class="btn btn-default-grey btn-sm fa fa-edit edit"></button></p>
+        {% if element.config.addTrashButton %}
+            <p><button type="button" class="btn btn-default-grey btn-sm fa fa-trash trash-image"></button></p>
+        {% endif %}
     </li>
 </ul>

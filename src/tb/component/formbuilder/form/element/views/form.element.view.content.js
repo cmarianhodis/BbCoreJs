@@ -21,9 +21,11 @@ define(
         'Core',
         'Core/Renderer',
         'BackBone',
-        'jquery'
+        'jquery',
+        'content.repository',
+        'content.container'
     ],
-    function (Core, Renderer, Backbone, jQuery) {
+    function (Core, Renderer, Backbone, jQuery, ContentRepository, ContentContainer) {
         'use strict';
 
         var ContentView = Backbone.View.extend({
@@ -35,6 +37,7 @@ define(
                 this.template = template;
                 this.element = element;
                 this.editClass = 'edit';
+                this.trashClass = 'trash-image';
                 this.elementSelector = 'form#' + this.el + ' ul[data-uid=' + this.element.value + ']';
                 this.form = form;
 
@@ -43,6 +46,7 @@ define(
 
             bindEvents: function () {
                 jQuery(this.mainSelector).on('click', this.elementSelector + ' .' + this.editClass, jQuery.proxy(this.onUpdateClick, this));
+                jQuery(this.mainSelector).on('click', this.elementSelector + ' .' + this.trashClass, jQuery.proxy(this.onDeleteClick, this));
             },
 
             onUpdateClick: function (event) {
@@ -73,6 +77,27 @@ define(
                         };
 
                         Edition.show(content, config);
+                    });
+                });
+            },
+
+            onDeleteClick: function (event) {
+                var target = jQuery(event.currentTarget),
+                    ul = target.parents('ul'),
+                    currentContent = ContentContainer.findByUid(ul.attr('data-uid')),
+                    parentContent = currentContent.getParent();
+
+                Core.ApplicationManager.invokeService('content.main.getContentManager').done(function (ContentManager) {
+                    ContentManager.createElement(ul.attr('data-type')).done(function (content) {
+                        var img = ul.find('.bb-content-img');
+
+                        img.attr('src', content.definition.image);
+                        target.remove();
+
+                        parentContent.data.elements.image.uid = content.uid;
+                        ContentRepository.save(parentContent.data).done(function () {
+                            parentContent.refresh();
+                        });
                     });
                 });
             },

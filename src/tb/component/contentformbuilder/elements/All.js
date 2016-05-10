@@ -40,7 +40,8 @@ define(
 
             getConfig: function (object) {
 
-                var dfd = jQuery.Deferred(),
+                var self = this,
+                    dfd = jQuery.Deferred(),
                     config,
                     element = object.content;
 
@@ -60,7 +61,8 @@ define(
                         'object_name': object.name,
                         'object_type': object.type,
                         'object_label': element.data.label,
-                        'element': element
+                        'element': element,
+                        'addTrashButton':  (object.name === 'image' && self.definition.image !== element.data.image) ? true : false
                     };
 
                     dfd.resolve(config);
