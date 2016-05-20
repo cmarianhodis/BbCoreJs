@@ -68,9 +68,10 @@ define(
 
                 initialize: function () {
                     this.popinsStatus = {};
+                    this.sessionPopinsStatus = JSON.parse(sessionStorage.getItem('popinsStatus')) || {};
                 },
 
-                updatePopinStatus: function (popIn) {
+                updatePopinStatus: function (popIn, saveData) {
                     var dialog = jQuery('#' + popIn.getId()),
                         position = dialog.parent().position(),
                         width = dialog.parent().outerWidth(),
@@ -96,6 +97,15 @@ define(
                             'position': position,
                             'positionEnd': positionEnd
                         };
+                        if (popIn.options.hasOwnProperty('savePosition') && popIn.options.savePosition && saveData) {
+                            this.sessionPopinsStatus[popIn.getId()] = {
+                                'top': position.top,
+                                'left': position.left,
+                                'width': width,
+                                'height': height
+                            };
+                            sessionStorage.setItem('popinsStatus', JSON.stringify(this.sessionPopinsStatus));
+                        }
                     } else {
                         delete this.popinsStatus[popIn.getId()];
                     }
@@ -114,7 +124,7 @@ define(
                     }
 
                     for (key in this.popinsStatus) {
-                        if (this.popinsStatus.hasOwnProperty(key) && popIn.getId() !== key) {
+                        if (this.popinsStatus.hasOwnProperty(key) && popIn.getId() !== key && !this.sessionPopinsStatus.hasOwnProperty(key)) {
                             if (this.popinsStatus[key].isOpen) {
                                 if (
                                     position.left >= this.popinsStatus[key].position.left &&
@@ -317,7 +327,8 @@ define(
                     dialogWrapper,
                     dialogPosition,
                     position,
-                    parentZIndex;
+                    parentZIndex,
+                    sessionPosition = {};
 
                 if (popIn.isClose()) {
                     popIn.open();
@@ -338,17 +349,21 @@ define(
                         jQuery('#' + popIn.getId()).dialog(popIn.getOptions());
                         jQuery('#' + popIn.getId()).on('dialogclose', function () {
                             self.hide(popIn);
-                            manager.updatePopinStatus(popIn);
+                            manager.updatePopinStatus(popIn, true);
                         });
 
                         jQuery("#" + popIn.getId()).on('dialogfocus', jQuery.proxy(this.handleFocus, this, popIn));
 
                         jQuery("#" + popIn.getId()).on('dialogdragstop', function () {
-                            manager.updatePopinStatus(popIn);
+                            manager.updatePopinStatus(popIn, true);
+                        });
+
+                        jQuery("#" + popIn.getId()).on('dialogresize', function () {
+                            manager.updatePopinStatus(popIn, true);
                         });
 
                         jQuery("#" + popIn.getId()).on('dialogopen', function (event) {
-                            manager.updatePopinStatus(popIn);
+                            manager.updatePopinStatus(popIn, false);
 
                             if (popIn.parent) {
                                 parentZIndex = jQuery('#' + popIn.parent.getId()).zIndex();
@@ -367,7 +382,12 @@ define(
                         jQuery('#' + popIn.getId()).parent().css(position);
                     }
 
-                    manager.updatePopinStatus(popIn);
+                    if (manager.sessionPopinsStatus.hasOwnProperty(popIn.getId())) {
+                        sessionPosition = manager.sessionPopinsStatus[popIn.getId()];
+                        jQuery('#' + popIn.getId()).parent().css(sessionPosition);
+                    }
+
+                    manager.updatePopinStatus(popIn, false);
                 }
             },
 

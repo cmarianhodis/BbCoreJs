@@ -163,6 +163,7 @@ define(
                         id: this.config.popinId || 'bb-page-tree' + '-' + uid,
                         title: self.config.popin_title,
                         height: 400 > jQuery(window).height() - 40 ? jQuery(window).height() - 40 : 400,
+                        savePosition: true,
 
                         onCanMove: function (node) {
                             if (node.is_fake || node.has_ellipsis || node.tree.action === 'search') {
