@@ -54,6 +54,7 @@ define(
             idDataAttribute: 'bb-id',
 
             typeDataAttribute: 'bb-type',
+            typeDataAttributeIE: 'bbType',
 
             droppableClass: '.bb-droppable',
 

@@ -31,15 +31,19 @@ define(['Core', 'jquery'], function (Core, jQuery) {
             'dragleave',
             'dragover',
             'drop',
-            'dragend'
+            'dragend',
+            'mousedown'
         ],
-
 
         bindEl = function (el, context, process) {
             (function (element, process, context) {
                 element.addEventListener(process, function (event) {
-                    mediator.publish('on:' + context + ':' + process, event);
-                });
+                    if (process === 'mousedown' && typeof this.dragDrop === 'function') {
+                        mediator.publish('on:' + context + ':' + process, event);
+                    } else if (process !== 'mousedown') {
+                        mediator.publish('on:' + context + ':' + process, event);
+                    }
+                }, false);
             }(el, process, context));
         },
 
@@ -49,6 +53,7 @@ define(['Core', 'jquery'], function (Core, jQuery) {
                 return;
             }
             if (keyword === 'drag') {
+                bindEl(el, context, dnd_process[7]);
                 for (i = 0; i < 3; i = i + 1) {
                     if (i === 2) {
                         i = i + 4;

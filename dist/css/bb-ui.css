@@ -10940,6 +10940,7 @@ fieldset[disabled] #bb5-ui .btn-online.active {
   line-height: 16px;
   text-decoration: none;
   text-align: center;
+  -ms-user-select: element;
 }
 /** Add Fixes */
 #bb5-ui .form-group.custom-form-group {
